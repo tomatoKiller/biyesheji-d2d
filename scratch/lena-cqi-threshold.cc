@@ -49,7 +49,16 @@ int main (int argc, char *argv[])
     std::string ulOutputName = "macOutput/Ul/MacStats_";
     std::string dlOutputName = "macOutput/Dl/MacStats_";
 
-    // LogComponentEnable("LteRlc",LOG_LEVEL_LOGIC);
+    LogComponentEnable("LteEnbRrc",LOG_LEVEL_DEBUG);
+    // LogComponentEnable("LteEnbMac",LOG_LEVEL_DEBUG);
+    // LogComponentEnable("LteEnbPhy",LOG_LEVEL_ALL);
+    LogComponentEnable("LteUePhy",LOG_LEVEL_DEBUG);
+    // LogComponentEnable("LteUeMac",LOG_LEVEL_DEBUG);
+    // LogComponentEnable("D2dCircleFfMacScheduler",LOG_LEVEL_ALL);
+    // LogComponentEnable("LteSpectrumPhy",LOG_LEVEL_FUNCTION);
+    // LogComponentEnable("MultiModelSpectrumChannel",LOG_LEVEL_DEBUG);
+    // LogComponentEnable("MultiModelSpectrumChannel",LOG_LEVEL_LOGIC);
+    // LogComponentEnable("D2dCircleSchedulerMemberSchedSapProvider",LOG_LEVEL_ALL);
 
 
 	
@@ -62,10 +71,10 @@ int main (int argc, char *argv[])
     // runnum = 8;
     while(runnum++ < 10)
   {
-    // if (runnum == 2)
-    // {
-    //   break;
-    // }
+    if (runnum == 2)
+    {
+      break;
+    }
     Config::SetDefault ("ns3::ConfigStore::Filename", StringValue ("input-defaults.txt"));
     Config::SetDefault ("ns3::ConfigStore::Mode", StringValue ("Load"));
     Config::SetDefault ("ns3::ConfigStore::FileFormat", StringValue ("RawText"));

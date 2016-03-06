@@ -348,7 +348,7 @@ MultiModelSpectrumChannel::StartTx (Ptr<SpectrumSignalParameters> txParams)
                       delay = m_propagationDelay->GetDelay (txMobility, receiverMobility);
                     }
                 }
-
+              // NS_LOG_DEBUG(this << "multi-model-spectrum-channel :: starttx ... 1");
               Ptr<NetDevice> netDev = (*rxPhyIterator)->GetDevice ();
               if (netDev)
                 {
@@ -363,11 +363,13 @@ MultiModelSpectrumChannel::StartTx (Ptr<SpectrumSignalParameters> txParams)
                   Simulator::Schedule (delay, &MultiModelSpectrumChannel::StartRx, this,
                                        rxParams, *rxPhyIterator);
                 }
+
+
             }
         }
-
+        NS_LOG_DEBUG(this << "multi-model-spectrum-channel :: starttx ... 2");
     }
-
+    NS_LOG_DEBUG(this << "multi-model-spectrum-channel :: starttx ... 3");
 }
 
 void

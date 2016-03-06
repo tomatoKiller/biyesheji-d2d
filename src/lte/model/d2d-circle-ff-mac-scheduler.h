@@ -18,38 +18,42 @@ namespace ns3 {
 
 
 
-// class comparator
-// {
-// public:
-//   comparator(bool rra): m_rra(rra){}
-//   bool operator ()(const d2dlink& a, const d2dlink& b)
-//   {
-//     double angle_a = a.m_src.m_position.y * 1.0 / a.m_src.m_position.x;
-//       double angle_b = b.m_src.m_position.y * 1.0 / b.m_src.m_position.x;
+class comparator
+{
+public:
+  comparator(bool rra): m_rra(rra){}
+  bool operator ()(const std::pair<d2dlink, d2dlink_state>& ap, const std::pair<d2dlink, d2dlink_state>& bp)
+  {
+    d2dlink a = ap.first;
+    d2dlink b = bp.first;
+    double angle_a = a.m_src.m_position.y * 1.0 / a.m_src.m_position.x;
+      double angle_b = b.m_src.m_position.y * 1.0 / b.m_src.m_position.x;
 
-//     if(a.m_src.m_rnti == b.m_src.m_rnti) return false;
+    if(a.m_src.m_rnti == b.m_src.m_rnti) return false;
 
-//     if( angle_a < angle_b)
-//       return true;
-//     else if( std::fabs(angle_b - angle_a) < 1e-4 )
-//     {
-//       //相同角度
-//       double radiu_a = std::sqrt( std::pow(a.m_src.m_position.x, 2) + std::pow(a.m_src.m_position.y, 2) );
-//       double radiu_b = std::sqrt( std::pow(b.m_src.m_position.x, 2) + std::pow(b.m_src.m_position.y, 2) );
+    if( angle_a < angle_b)
+      return true;
+    else if( std::fabs(angle_b - angle_a) < 1e-4 )
+    {
+      //相同角度
+      double radiu_a = std::sqrt( std::pow(a.m_src.m_position.x, 2) + std::pow(a.m_src.m_position.y, 2) );
+      double radiu_b = std::sqrt( std::pow(b.m_src.m_position.x, 2) + std::pow(b.m_src.m_position.y, 2) );
 
-//       //如果rra 为true， 则从径向朝外分配资源
-//       if(m_rra)
-//         return radiu_a < radiu_b;
-//       else
-//         return radiu_b < radiu_a;
-//     }
-//     else
-//       return false;
-//   }
+      //如果rra 为true， 则从径向朝外分配资源
+      if(m_rra)
+        return radiu_a < radiu_b;
+      else
+        return radiu_b < radiu_a;
+    }
+    else
+      return false;
+  }
 
-// private:
-//   bool m_rra;
-// };
+private:
+  bool m_rra;
+};
+
+
 
 
 
@@ -103,7 +107,9 @@ private:
 
   std::map <uint16_t,uint8_t> m_uesTxMode; // txMode of the UEs
 
-  std::map<struct d2dlink, struct d2dlink_state> m_d2dlinks;  //all the d2d links in the cell
+  // std::map<struct d2dlink, struct d2dlink_state, ComPar> m_d2dlinks;  //all the d2d links in the cell
+
+  std::vector<std::pair<d2dlink, d2dlink_state> > m_d2dlinks;
 
   bool m_rra;   //  radius random resource allocation
 
@@ -120,6 +126,8 @@ private:
 
   D2dFfMacCschedSapProvider* m_cschedSapProvider;
   D2dFfMacSchedSapProvider* m_schedSapProvider;
+
+  Ptr<LteAmc> m_amc;
 
 };
 

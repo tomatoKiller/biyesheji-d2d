@@ -219,6 +219,10 @@ private:
   void DoLeaveD2dMode(uint16_t src_rnti, uint16_t dst_rnti);
   void DoUpdateD2dInfo(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  cqi, Vector& src_pos, Vector& dst_pos);
   void NotifyUeMode(uint16_t src_rnti, uint16_t dst_rnti, bool mode);
+
+  uint8_t   m_d2dBandwidth;
+  uint8_t   m_rbsPerD2dUser;
+  uint16_t   m_interDistance;
 //-----------------------------------------------------------------------D 2 D O V E R--------------------------------------------------------------
 
   // forwarded from FfMacCchedSapUser
@@ -295,6 +299,9 @@ private:
    */
   TracedCallback<uint32_t, uint32_t, uint16_t,
                  uint8_t, uint16_t> m_ulScheduling;
+
+  // TracedCallback<uint32_t, uint32_t, uint16_t,
+  //                uint8_t, uint16_t> m_d2dScheduling;
   
   uint8_t m_macChTtiDelay; // delay of MAC, PHY and channel in terms of TTIs
 

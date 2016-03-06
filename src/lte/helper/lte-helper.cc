@@ -588,6 +588,7 @@ LteHelper::InstallSingleEnbDevice (Ptr<Node> n)
   dev->SetAttribute ("LteEnbPhy", PointerValue (phy));
   dev->SetAttribute ("LteEnbMac", PointerValue (mac));
   dev->SetAttribute ("FfMacScheduler", PointerValue (sched));
+  dev->SetAttribute ("D2dCircleFfMacScheduler", PointerValue (d2dSched));
   dev->SetAttribute ("LteEnbRrc", PointerValue (rrc)); 
   dev->SetAttribute ("LteHandoverAlgorithm", PointerValue (handoverAlgorithm));
   dev->SetAttribute ("LteFfrAlgorithm", PointerValue (ffrAlgorithm));
@@ -782,6 +783,8 @@ LteHelper::InstallSingleUeDevice (Ptr<Node> n)
     }
 
   dev->Initialize ();
+
+  // std::cout<<"install single ue"<<std::endl;
 
   return dev;
 }

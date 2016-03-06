@@ -157,6 +157,7 @@ struct D2dDciListElement_s
   uint8_t   m_rbStart;
   uint8_t   m_rbLen;
   uint8_t   m_mcs;
+  uint8_t   m_cqi;
 };
 
 struct D2dCqiListElement_s

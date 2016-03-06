@@ -435,6 +435,21 @@ LteEnbMac::GetTypeId (void)
                    UintegerValue (3),
                    MakeUintegerAccessor (&LteEnbMac::m_raResponseWindowSize),
                    MakeUintegerChecker<uint8_t> (2, 10))
+    .AddAttribute ("D2dBandwidth",
+                   "length of the window (in TTIs) for the reception of the random access response (RAR); the resulting RAR timeout is this value + 3 ms",
+                   UintegerValue (10),
+                   MakeUintegerAccessor (&LteEnbMac::m_d2dBandwidth),
+                   MakeUintegerChecker<uint8_t> (1, 50))
+    .AddAttribute ("RbsPerD2dUser",
+                   "length of the window (in TTIs) for the reception of the random access response (RAR); the resulting RAR timeout is this value + 3 ms",
+                   UintegerValue (2),
+                   MakeUintegerAccessor (&LteEnbMac::m_rbsPerD2dUser),
+                   MakeUintegerChecker<uint8_t> (1, 4))
+    .AddAttribute ("InterDistance",
+                   "length of the window (in TTIs) for the reception of the random access response (RAR); the resulting RAR timeout is this value + 3 ms",
+                   UintegerValue (50),
+                   MakeUintegerAccessor (&LteEnbMac::m_interDistance),
+                   MakeUintegerChecker<uint16_t> ())
     .AddTraceSource ("DlScheduling",
                      "Information regarding DL scheduling.",
                      MakeTraceSourceAccessor (&LteEnbMac::m_dlScheduling),
@@ -710,7 +725,10 @@ LteEnbMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
 //----------------------------------------------------------D 2 D------------------------------------------
   D2dFfMacSchedSapProvider::SchedReqParameters d2dparams;
+  NS_ASSERT(m_d2dschedSapProvider != 0);
+  NS_LOG_DEBUG("LteEnbMac d2d point");
   m_d2dschedSapProvider->SchedReq(d2dparams);
+  NS_LOG_DEBUG("LteEnbMac d2d point .. 2");
 //------------------------------------------------D 2 D O V E R------------------------------------------
 
 }
@@ -865,6 +883,13 @@ LteEnbMac::DoConfigureMac (uint8_t ulBandwidth, uint8_t dlBandwidth)
   m_macChTtiDelay = m_enbPhySapProvider->GetMacChTtiDelay ();
   // ...more parameters can be configured
   m_cschedSapProvider->CschedCellConfigReq (params);
+
+  D2dFfMacCschedSapProvider::CschedCellConfigReqParameters pa;
+  pa.m_rbs = m_d2dBandwidth;
+  pa.m_rbsperuser = m_rbsPerD2dUser;
+  pa.m_interDistance = m_interDistance;
+
+  m_d2dcschedSapProvider->CschedCellConfigReq(pa);
 }
 
 
@@ -1356,18 +1381,24 @@ void
 LteEnbMac::DoD2dCschedUeConfigCnf(D2dFfMacCschedSapUser::CschedUeConfigCnfParameters params)
 {
   NS_LOG_FUNCTION (this <<"ue " << params.m_rnti << " enter d2d mode successfully");
+  NS_LOG_DEBUG(this << " in LteEnbMac::DoD2dCschedUeConfigCnf function");
 }
 
 void 
 LteEnbMac::DoD2dSchedConfigInd(D2dFfMacSchedSapUser::SchedConfigIndParameters ind)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_DEBUG(this << " in LteEnbMac::DoD2dSchedConfigInd function");
   for (unsigned int i = 0; i < ind.m_dciList.size (); i++)
   {
     // send the correspondent ul dci
+    std::cout<<"here a a  a a a"<<std::endl;
     Ptr<D2dDciLteControlMessage> msg = Create<D2dDciLteControlMessage> ();
     msg->SetDci (ind.m_dciList.at (i));
     m_enbPhySapProvider->SendLteControlMessage (msg);
+
+    m_ulScheduling (0, 0, ind.m_dciList.at (i).m_tx,
+                      ind.m_dciList.at (i).m_cqi, ind.m_dciList.at (i).m_rbLen);
   }
 }
 
@@ -1403,6 +1434,8 @@ void
 LteEnbMac::DoSendD2dCqiDetectReq (const std::vector<d2dLinkSrsConfig>& linkList)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_DEBUG(this << " in LteEnbMac::DoSendD2dCqiDetectReq function");
+
   for (unsigned int i = 0; i < linkList.size (); i++)
   {
     // send the correspondent d2d dci
@@ -1425,6 +1458,7 @@ void
 LteEnbMac::DoEnterD2dMode(uint16_t src_rnti, uint16_t dst_rnti, 
   const std::vector<uint8_t>&  cqi, Vector& src_pos, Vector& dst_pos)
 {
+  NS_LOG_DEBUG(this << " in LteEnbMac::DoEnterD2dMode function  : " << src_rnti << " ----> "<<dst_rnti <<"enter d2d mode");
   D2dFfMacCschedSapProvider::CschedUeConfigReqParameters params;
   params.m_d2dmode = true;
   params.m_srcrnti = src_rnti;
@@ -1444,6 +1478,7 @@ LteEnbMac::NotifyUeMode(uint16_t src_rnti, uint16_t dst_rnti, bool mode)
   /* mode:  true for d2d mode 
             false for cell mode
   */
+  NS_LOG_DEBUG(this << " in LteEnbMac::NotifyUeMode function");
   Ptr<ComModeLteControlMessage> msg = Create<ComModeLteControlMessage> ();
   msg->SetMode(mode);
   msg->SetSrcDst(src_rnti, dst_rnti);
@@ -1453,6 +1488,7 @@ LteEnbMac::NotifyUeMode(uint16_t src_rnti, uint16_t dst_rnti, bool mode)
 void
 LteEnbMac::DoLeaveD2dMode(uint16_t src_rnti, uint16_t dst_rnti)
 {
+  NS_LOG_DEBUG(this << " in LteEnbMac::DoLeaveD2dMode function  : " << src_rnti << " ----> "<<dst_rnti <<"leave d2d mode");
   D2dFfMacCschedSapProvider::CschedUeConfigReqParameters params;
   params.m_d2dmode = false;
   params.m_srcrnti = src_rnti;
@@ -1472,6 +1508,7 @@ void
 LteEnbMac::DoUpdateD2dInfo(uint16_t src_rnti, uint16_t dst_rnti, 
   const std::vector<uint8_t>&  cqi, Vector& src_pos, Vector& dst_pos)
 {
+  NS_LOG_DEBUG(this << " in LteEnbMac::DoUpdateD2dInfo function");
   D2dFfMacCschedSapProvider::CschedUeConfigReqParameters params;
   params.m_srcrnti = src_rnti;
   params.m_srcposition = src_pos;

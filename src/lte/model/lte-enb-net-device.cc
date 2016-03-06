@@ -88,6 +88,11 @@ TypeId LteEnbNetDevice::GetTypeId (void)
                    PointerValue (),
                    MakePointerAccessor (&LteEnbNetDevice::m_scheduler),
                    MakePointerChecker <FfMacScheduler> ())
+    .AddAttribute ("D2dCircleFfMacScheduler",
+                   "The d2d scheduler associated to this EnbNetDevice",
+                   PointerValue (),
+                   MakePointerAccessor (&LteEnbNetDevice::m_d2dScheduler),
+                   MakePointerChecker <D2dCircleFfMacScheduler> ())
     .AddAttribute ("LteEnbPhy",
                    "The PHY associated to this EnbNetDevice",
                    PointerValue (),
@@ -163,6 +168,9 @@ LteEnbNetDevice::DoDispose ()
 
   m_scheduler->Dispose ();
   m_scheduler = 0;
+
+  m_d2dScheduler->Dispose ();
+  m_d2dScheduler = 0;
 
   m_rrc->Dispose ();
   m_rrc = 0;

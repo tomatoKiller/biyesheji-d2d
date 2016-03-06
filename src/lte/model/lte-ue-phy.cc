@@ -790,7 +790,7 @@ LteUePhy::CreateDlCqiFeedbackMessage (const SpectrumValue& sinr)
               cqiSum += cqi.at (i);
               activeSubChannels++;
             }
-          NS_LOG_DEBUG (this << " subch " << i << " cqi " <<  cqi.at (i));
+          // NS_LOG_DEBUG (this << " subch " << i << " cqi " <<  cqi.at (i));
         }
       dlcqi.m_rnti = m_rnti;
       dlcqi.m_ri = 1; // not yet used
@@ -1076,7 +1076,8 @@ LteUePhy::ReceiveLteControlMessageList (std::list<Ptr<LteControlMessage> > msgLi
           }
         if (dci.m_tx == m_rnti)
         {
-          SetD2dSubChannelsForTransmission(dci.m_rx, d2dRb);
+          QueueD2dDciForTx(dci.m_rx, d2dRb);
+          // SetD2dSubChannelsForTransmission(dci.m_rx, d2dRb);
         }
         else if (dci.m_rx == m_rnti)
         {
@@ -1204,11 +1205,13 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
     if( m_d2dSrsPeriodity != 0 ) {
       m_currentD2dSrsOffset = (frameNo-1)*10 + (subframeNo-1) % m_d2dSrsPeriodity;
       std::map< uint16_t, uint16_t>::iterator iter = m_d2dSrsOffset_tx.begin();
-      
+      std::cout<<"schedule SendD2dSrs ... 1"<<std::endl;
       for(; iter != m_d2dSrsOffset_tx.end(); ++iter)
       {
+        std::cout<<"schedule SendD2dSrs ... 2"<<std::endl;
         if ( m_currentD2dSrsOffset == iter->second )
         {
+          std::cout<<"schedule SendD2dSrs ... 3"<<std::endl;
           Simulator::Schedule (UL_SRS_DELAY_FROM_SUBFRAME_START, 
                                                     &LteUePhy::SendD2dSrs,
                                                     this, iter->first);
@@ -1237,9 +1240,14 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
 //----------------------------------------------------D 2 D------------------------------------------------------------
           
-          std::map<uint16_t, Ptr<LteSpectrumPhy> >::iterator itPhy = m_D2dTxPhy.begin();
-          for(; itPhy != m_D2dTxPhy.end(); ++itPhy)
+          std::map<uint16_t, std::vector<int> >::iterator itDci = m_D2dDciQueueTx.begin();
+          for(; itDci != m_D2dDciQueueTx.end(); ++itDci)
           {
+            // if (!itPhy->second->GetD2dMode())
+            // {
+            //   continue;
+            // }
+            
             Ptr<PacketBurst> pbD2d = CreateObject <PacketBurst> ();
             std::list<Ptr<Packet> >::const_iterator itPa = pb->Begin();
             for(; itPa != pb->End(); ++itPa)
@@ -1249,7 +1257,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
               /* tag1 --> 自己的rnti;    tag2 --> 目标rnti */
               LteRadioBearerTag tag1;
               packet_new->RemovePacketTag (tag1);
-              tag1.SetRnti(itPhy->first);
+              tag1.SetRnti(itDci->first);
 
               // tag2 = tag1;
               // tag2.SetRnti(itPhy->first);
@@ -1260,8 +1268,14 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
               pbD2d->AddPacket(packet_new);
             }
-            (*itPhy).second->StartTxDataFrame (pbD2d, std::list<Ptr<LteControlMessage> >(), UL_DATA_DURATION);
+
+            std::cout<<"in LteUePhy :: send d2d data"<<std::endl;
+
+            SetD2dSubChannelsForTransmission(itDci->first, itDci->second);
+            m_D2dTxPhy[itDci->first]->StartTxDataFrame (pbD2d, std::list<Ptr<LteControlMessage> >(), UL_DATA_DURATION);
           }
+
+          m_D2dDciQueueTx.clear();
             
 //-----------------------------------------------------D 2 D  O V E R----------------------------------------------------
 
@@ -1613,19 +1627,30 @@ void
 LteUePhy::D2dPhyPduReceived(Ptr<Packet> p)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_DEBUG(this << " in LteUePhy::D2dPhyPduReceived function");
 }
 
 void
 LteUePhy::DoOpenD2dMode(uint16_t src_rnti, uint16_t dst_rnti)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_DEBUG(this << " in LteUePhy::DoOpenD2dMode function");
   // m_d2dMode = true;
+  if (m_rnti == src_rnti)
+  {
+    m_D2dTxPhy[dst_rnti]->SetD2dMode(true);
+  }
+  else if (dst_rnti == m_rnti)
+  {
+    m_D2dRxPhy[src_rnti]->SetD2dMode(true);
+  }
 }
 
 void
 LteUePhy::DoCloseD2dMode(uint16_t src_rnti, uint16_t dst_rnti)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_DEBUG(this << " in LteUePhy::DoCloseD2dMode function");
   if (src_rnti == m_rnti)
   {
     m_d2dSrsOffset_tx.erase(dst_rnti);
@@ -1643,7 +1668,9 @@ void
 LteUePhy::DoSetD2dSrsConfigForTx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
 {
   NS_LOG_FUNCTION (this);
-  m_d2dSrsOffset_tx[ dst_rnti ] = d2dSrsConfig;
+  NS_LOG_DEBUG(this << " in LteUePhy::DoSetD2dSrsConfigForTx function");
+  NS_LOG_DEBUG("UE " << dst_rnti << "d2d srs offset == "<< GetSrsSubframeOffset(d2dSrsConfig));
+  m_d2dSrsOffset_tx[ dst_rnti ] = GetSrsSubframeOffset(d2dSrsConfig);
   m_d2dSrsPeriodity = GetSrsPeriodicity(d2dSrsConfig);
 
   Ptr<LteSpectrumPhy> D2dTxPhy = CreateObject<LteSpectrumPhy> ();
@@ -1655,7 +1682,7 @@ LteUePhy::DoSetD2dSrsConfigForTx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
   
   D2dTxPhy->SetAntenna( (m_d2dAntennaModelFactory.Create ())->GetObject<AntennaModel> () );
 
-  D2dTxPhy->SetD2dMode(true);
+  // D2dTxPhy->SetD2dMode(true);
   
   m_D2dTxPhy[dst_rnti] = D2dTxPhy;
 
@@ -1665,15 +1692,23 @@ void
 LteUePhy::DoSetD2dSrsConfigForRx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_DEBUG(this << " in LteUePhy::DoSetD2dSrsConfigForRx function");
   m_d2dSrsOffset_rx[ dst_rnti ] = d2dSrsConfig;
 
+
+
   Ptr<LteSpectrumPhy> D2dRxPhy = CreateObject<LteSpectrumPhy> ();
+
+  D2dRxPhy->SetRnti(m_rnti);
+  D2dRxPhy->SetDstRnti(dst_rnti);
+
   D2dRxPhy->SetChannel(m_d2dChannel);
 
   Ptr<MobilityModel> mm = GetDevice()->GetNode()->GetObject<MobilityModel> ();
   D2dRxPhy->SetMobility (mm);
   D2dRxPhy->SetAntenna( GetUplinkSpectrumPhy()->GetRxAntenna() );
   D2dRxPhy->SetLtePhyRxDataEndOkCallback (MakeCallback (&LteUePhy::D2dPhyPduReceived, this));
+  D2dRxPhy->SetD2dDataCqiRxEndOkCallback(MakeCallback (&LteUePhy::GenerateD2dCqiReport, this));
   D2dRxPhy->SetNoisePowerSpectralDensity (m_noisePsd);
   m_d2dChannel->AddRx (D2dRxPhy);
 
@@ -1681,11 +1716,11 @@ LteUePhy::DoSetD2dSrsConfigForRx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
   pCtrl->AddCallback (MakeCallback (&LteUePhy::ReceiveD2dSrs, this));
   D2dRxPhy->AddCtrlSinrChunkProcessor (pCtrl);
 
-  // Ptr<LteChunkProcessor> pData = Create<LteChunkProcessor> ();
-  // pData->AddCallback (MakeBoundCallback (&LteUePhy::GenerateD2dCqiReport, this, dst_rnti));
-  // D2dRxPhy->AddDataSinrChunkProcessor (pData);
+  Ptr<LteChunkProcessor> pData = Create<LteChunkProcessor> ();
+  pData->AddCallback (MakeCallback (&LteSpectrumPhy::ReceiveDataCqi, D2dRxPhy));
+  D2dRxPhy->AddDataSinrChunkProcessor (pData);
 
-  D2dRxPhy->SetD2dMode(true);
+  // D2dRxPhy->SetD2dMode(true);
 
   
 
@@ -1696,6 +1731,7 @@ LteUePhy::DoSetD2dSrsConfigForRx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
 void 
 LteUePhy::SendD2dSrs(uint16_t dst_rnti)
 {
+  NS_LOG_DEBUG(this << " in LteUePhy::SendD2dSrs function");
   std::vector <int> d2dRb;
   for (uint8_t i = 0; i < m_d2dBandwidth; i++)
     {
@@ -1715,6 +1751,7 @@ void
 LteUePhy::ReceiveD2dSrs(const SpectrumValue& sinr)
 {
   NS_LOG_FUNCTION (this << sinr);
+  NS_LOG_DEBUG(this << " in LteUePhy::ReceiveD2dSrs function");
   // Values::const_iterator it;
   // std::vector<double> ret;
 
@@ -1742,6 +1779,7 @@ LteUePhy::ReceiveD2dSrs(const SpectrumValue& sinr)
 void
 LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
 {
+  NS_LOG_DEBUG(this << " in LteUePhy::GenerateD2dCqiReport function");
   // Values::const_iterator it;
   // std::vector<double> ret;
 
@@ -1771,7 +1809,7 @@ LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
           cqiSum += cqi.at (i);
           activeSubChannels++;
         }
-      NS_LOG_DEBUG (this << " d2d subch " << i << " cqi " <<  cqi.at (i));
+      // NS_LOG_DEBUG (this << " d2d subch " << i << " cqi " <<  cqi.at (i));
     }
 
   Ptr<D2dCqiLteControlMessage> msg = Create<D2dCqiLteControlMessage> ();
@@ -1804,6 +1842,7 @@ void
 LteUePhy::SetD2dSubChannelsForTransmission (uint16_t dst_rnti, std::vector <int> mask)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_DEBUG(this << " in LteUePhy::SetD2dSubChannelsForTransmission function");
 
   m_d2dSubChannelsForTransmission[dst_rnti] = mask;
 
@@ -1818,8 +1857,17 @@ void
 LteUePhy::SetD2dSubChannelsForReception (uint16_t src_rnti, std::vector <int> mask)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_DEBUG(this << " in LteUePhy::SetD2dSubChannelsForReception function");
   m_d2dSubChannelsForReception[src_rnti] = mask;
 }
+
+void
+LteUePhy::QueueD2dDciForTx(uint16_t rnti, std::vector <int>& d2dRb)
+{
+  m_D2dDciQueueTx[rnti] = d2dRb;
+}
+
+
 
 // void
 // LteUePhy::D2dDataReceived(Ptr<Packet> p)

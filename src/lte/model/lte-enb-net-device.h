@@ -23,6 +23,7 @@
 #define LTE_ENB_NET_DEVICE_H
 
 #include "ns3/lte-net-device.h"
+ #include "ns3/d2d-circle-ff-mac-scheduler.h"
 #include "ns3/event-id.h"
 #include "ns3/mac48-address.h"
 #include "ns3/traced-callback.h"
@@ -195,6 +196,8 @@ private:
   Ptr<LteEnbRrc> m_rrc;
 
   Ptr<FfMacScheduler> m_scheduler;
+
+  Ptr<D2dCircleFfMacScheduler> m_d2dScheduler;
 
   Ptr<LteHandoverAlgorithm> m_handoverAlgorithm;
 

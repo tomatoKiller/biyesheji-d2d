@@ -1504,7 +1504,7 @@ LteEnbRrc::GetTypeId (void)
                    MakeUintegerChecker<uint8_t> ())
     .AddAttribute ("D2dDistanceThreshold",
                    "if the distance between two UE is bigger than D2dDistanceThreshold, don't use d2d communication",
-                   DoubleValue (30.0),
+                   DoubleValue (200.0),
                    MakeDoubleAccessor (&LteEnbRrc::m_d2dDistanceThreshold),
                    MakeDoubleChecker<double> ())
 
@@ -1827,6 +1827,13 @@ LteEnbRrc::ConfigureCell (uint8_t ulBandwidth, uint8_t dlBandwidth,
    * SystemInformationPeriodicity attribute to configure this).
    */
   Simulator::Schedule (MilliSeconds (16), &LteEnbRrc::SendSystemInformation, this);
+
+  if (m_innerCom.empty())
+  {
+    /* 仿真开始10ms之后，开始进行D2D决策 */
+    std::cout<<"schedule DetectInnerCommunication"<<std::endl;
+    Simulator::Schedule (MilliSeconds(300), &LteEnbRrc::DetectInnerCommunication, this);
+  }
 
   m_configured = true;
 
@@ -2532,7 +2539,7 @@ LteEnbRrc::GetLogicalChannelPriority (EpsBearer bearer)
 void
 LteEnbRrc::SendSystemInformation ()
 {
-  // NS_LOG_FUNCTION (this);
+  NS_LOG_FUNCTION (this);
 
   /*
    * For simplicity, we use the same periodicity for all SIBs. Note that in real
@@ -2555,11 +2562,8 @@ LteEnbRrc::SendSystemInformation ()
   m_rrcSapUser->SendSystemInformation (si);
   Simulator::Schedule (m_systemInformationPeriodicity, &LteEnbRrc::SendSystemInformation, this);
 
-  if (m_innerCom.empty())
-  {
-    /* 仿真开始10ms之后，开始进行D2D决策 */
-    Simulator::Schedule (MilliSeconds(10), &LteEnbRrc::DetectInnerCommunication, this);
-  }
+  std::cout<<"SendSystemInformation"<<std::endl;
+
 
 }
 
@@ -2568,6 +2572,9 @@ LteEnbRrc::SendSystemInformation ()
 void 
 LteEnbRrc::DetectInnerCommunication()
 {
+  NS_LOG_FUNCTION(this);
+  NS_LOG_DEBUG(this << " in LteEnbRrc::DetectInnerCommunication function");
+
   std::map<uint16_t, Ptr<UeManager> >::iterator iter_next = m_ueMap.begin();
   std::map<uint16_t, Ptr<UeManager> >::iterator iter_bef = iter_next++;
   while(1)
@@ -2585,6 +2592,9 @@ LteEnbRrc::DetectInnerCommunication()
 
     // m_innerCom.insert(std::pair<uint16_t, uint16_t>, d2dCommunicationConfig(key, cf));
     m_innerCom[key] = cf;
+
+    iter_next++;
+    iter_bef++;
   }
 
   m_d2dSrsReportPeriodity = m_innerCom.size() * 2;
@@ -2598,12 +2608,16 @@ LteEnbRrc::DetectInnerCommunication()
 void 
 LteEnbRrc::D2dCommunicationDetect()
 {
+  NS_LOG_FUNCTION(this);
+  NS_LOG_DEBUG(this << " in LteEnbRrc::D2dCommunicationDetect function");
+
   std::vector<d2dLinkSrsConfig> linkList;
 
   std::map<std::pair<uint16_t, uint16_t>, d2dCommunicationConfig>::iterator iter = m_innerCom.begin();
 
   for(; iter != m_innerCom.end(); ++iter)
   {
+
     Vector src_pos = GetPosition(iter->first.first);
     Vector dst_pos = GetPosition(iter->first.second);
     double distance = sqrt( pow(src_pos.x - dst_pos.x, 2) + pow(src_pos.y - dst_pos.y, 2) );
@@ -2653,7 +2667,8 @@ void
 LteEnbRrc::SendD2dCqiDetectReq(const std::vector<d2dLinkSrsConfig >& linkList)
 {
 	/* 筛选linkList中的通信对，只针对那些 新的有可能采用D2D通信的 链路 发送CQI测量请求，因为旧的 */
-
+  NS_LOG_FUNCTION(this);
+  NS_LOG_DEBUG(this << " in LteEnbRrc::SendD2dCqiDetectReq function: D2D pairs = " << linkList.size());
   m_cmacSapProvider->SendD2dCqiDetectReq(linkList);
 
 	
@@ -2662,6 +2677,8 @@ LteEnbRrc::SendD2dCqiDetectReq(const std::vector<d2dLinkSrsConfig >& linkList)
 void
 LteEnbRrc::DoReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  cqi)
 {
+  NS_LOG_FUNCTION(this);
+  NS_LOG_DEBUG(this << " in LteEnbRrc::DoReceiveD2dCqi function");
   Vector src_pos, dst_pos;
 
 	bool result = CanUseD2dMode(src_rnti, dst_rnti, cqi, src_pos, dst_pos);
@@ -2696,7 +2713,7 @@ LteEnbRrc::DoReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vect
 Vector
 LteEnbRrc::GetPosition(uint16_t rnti)
 {
-
+  NS_LOG_FUNCTION(this);
   Vector position;
   // NodeList::Iterator it = NodeList::Begin ();
 
@@ -2715,12 +2732,13 @@ LteEnbRrc::GetPosition(uint16_t rnti)
               if ( uedev->GetMac()->GetRnti() == rnti )
               {
                 position = node->GetObject<MobilityModel> ()->GetPosition ();
+                goto out;
               }
 
             }
         }
     }
-
+out:
     // NS_ASSERT(it != NodeList::End ());
     NS_ASSERT(i != NodeList::GetNNodes ());
 
@@ -2730,6 +2748,8 @@ LteEnbRrc::GetPosition(uint16_t rnti)
 bool
 LteEnbRrc::CanUseD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  cqiList, Vector& src_pos, Vector& dst_pos)
 {
+  NS_LOG_FUNCTION(this);
+  NS_LOG_DEBUG(this << " in LteEnbRrc::CanUseD2dMode function");
   src_pos = GetPosition(src_rnti);
   dst_pos = GetPosition(dst_rnti);
   // for (NodeList::Iterator it = NodeList::Begin (); it != NodeList::End (); ++it)
@@ -2770,13 +2790,14 @@ LteEnbRrc::CanUseD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector
 
     if (cqi == 0 )
     {
+        NS_LOG_DEBUG("cqi == 0 between " << src_rnti <<" and " <<dst_rnti);
     		return false;
     } 
     else
     {
     		struct d2dResUseInfo_s d2dru = m_cmacSapProvider->GetD2dResUseInfo() ;
     		double d2dResUsePercent = d2dru.m_dru;
-    		if (d2dResUsePercent < m_d2dCqiThreshold )
+    		if (d2dResUsePercent < m_d2dResUseThreshold )
     		{
     			return true;
     		}

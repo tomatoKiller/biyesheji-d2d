@@ -205,6 +205,10 @@ public:
   void SetD2dSubChannelsForTransmission (uint16_t dst_rnti, std::vector <int> mask);
   void SetD2dSubChannelsForReception (uint16_t src_rnti, std::vector <int> mask);
 
+  void QueueD2dDciForTx(uint16_t rnti, std::vector <int>& d2dRb);
+
+  std::map<uint16_t, std::vector<int> > m_D2dDciQueueTx;
+
   std::map<uint16_t, Ptr<LteSpectrumPhy> > m_D2dTxPhy;
   std::map<uint16_t, Ptr<LteSpectrumPhy> > m_D2dRxPhy;
   uint8_t m_d2dBandwidth;

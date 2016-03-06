@@ -104,6 +104,7 @@ typedef Callback< void > LtePhyRxDataEndErrorCallback;
 * @param packet the received Packet
 */
 typedef Callback< void, Ptr<Packet> > LtePhyRxDataEndOkCallback;
+typedef Callback< void, const SpectrumValue&, uint16_t > D2dDataCqiRxEndOkCallback;
 
 
 /**
@@ -332,8 +333,17 @@ public:
 
   void AddD2dCtrlSinrChunkProcessor (Ptr<LteChunkProcessor> p);
   void AddD2dDataSinrChunkProcessor (Ptr<LteChunkProcessor> p);
+  void ReceiveDataCqi(const SpectrumValue& sinr);
+  void SetDstRnti(uint16_t dst_rnti);
+  void SetRnti(uint16_t rnti);
+  void SetD2dDataCqiRxEndOkCallback(D2dDataCqiRxEndOkCallback c);
+
+  bool GetD2dMode();
 
   bool m_d2dMode;
+  uint16_t m_dst_rnti;
+  uint16_t m_rnti;
+  D2dDataCqiRxEndOkCallback m_d2dDataCqiRxEndOkCallback;
 //-------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------
 
 

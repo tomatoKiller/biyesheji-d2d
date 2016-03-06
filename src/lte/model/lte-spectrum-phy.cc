@@ -1458,6 +1458,12 @@ LteSpectrumPhy::SetD2dMode(bool mode)
   m_d2dMode = mode;
 }
 
+bool 
+LteSpectrumPhy::GetD2dMode()
+{
+  return m_d2dMode;
+}
+
 void
 LteSpectrumPhy::AddD2dCtrlSinrChunkProcessor (Ptr<LteChunkProcessor> p)
 {
@@ -1468,6 +1474,30 @@ void
 LteSpectrumPhy::AddD2dDataSinrChunkProcessor (Ptr<LteChunkProcessor> p)
 {
   m_d2dInterferenceData->AddSinrChunkProcessor (p);
+}
+
+void 
+LteSpectrumPhy::SetDstRnti(uint16_t dst_rnti)
+{
+  m_dst_rnti = dst_rnti;
+}
+
+void 
+LteSpectrumPhy::SetRnti(uint16_t rnti)
+{
+  m_rnti = rnti;
+}
+
+void 
+LteSpectrumPhy::ReceiveDataCqi(const SpectrumValue& sinr)
+{
+  m_d2dDataCqiRxEndOkCallback(sinr, m_dst_rnti);
+}
+
+void
+LteSpectrumPhy::SetD2dDataCqiRxEndOkCallback(D2dDataCqiRxEndOkCallback c)
+{
+  m_d2dDataCqiRxEndOkCallback = c;
 }
 //-------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------
 
