@@ -219,6 +219,7 @@ private:
   void DoLeaveD2dMode(uint16_t src_rnti, uint16_t dst_rnti);
   void DoUpdateD2dInfo(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  cqi, Vector& src_pos, Vector& dst_pos);
   void NotifyUeMode(uint16_t src_rnti, uint16_t dst_rnti, bool mode);
+  void DoRemainCellMode(uint16_t src_rnti, uint16_t dst_rnti);
 
   uint8_t   m_d2dBandwidth;
   uint8_t   m_rbsPerD2dUser;

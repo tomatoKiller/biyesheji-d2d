@@ -829,8 +829,8 @@ void
 LteUeMac::DetectD2dChannelQuality(Ptr<D2dCqiDetectLteControlMessage> dcdMsg)
 {
   NS_LOG_FUNCTION (this);
-  NS_LOG_DEBUG(this << " in LteUeMac::DetectD2dChannelQuality function");
-  std::cout<<"in LteUeMac::DetectD2dChannelQuality function"<<std::endl;
+  // NS_LOG_DEBUG(this << " in LteUeMac::DetectD2dChannelQuality function");
+  // std::cout<<"in LteUeMac::DetectD2dChannelQuality function"<<std::endl;
   uint16_t src_rnti = dcdMsg->GetSrc();
   uint16_t dst_rnti = dcdMsg->GetDst();
   // m_d2dSrcIndexMap[std::pair<uint16_t, uint16_t>(src_rnti, dst_rnti)] = dcdMsg->GetSrsIndex();
@@ -862,6 +862,7 @@ void
 LteUeMac::CommunicationModeChange(Ptr<ComModeLteControlMessage> msg)
 {
   NS_LOG_DEBUG(this << " in LteUeMac::CommunicationModeChange function");
+  std::cout<<" in LteUeMac::CommunicationModeChange function"<<std::endl;
   if( msg->GetMode() )
   {
     /*  enter d2d mode */

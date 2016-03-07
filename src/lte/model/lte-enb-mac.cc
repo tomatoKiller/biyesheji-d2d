@@ -72,6 +72,7 @@ public:
   virtual void EnterD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  cqi, Vector& src_pos, Vector& dst_pos);
   virtual void LeaveD2dMode(uint16_t src_rnti, uint16_t dst_rnti);
   virtual void UpdateD2dInfo(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  cqi, Vector& src_pos, Vector& dst_pos);
+  virtual void RemainCellMode(uint16_t src_rnti, uint16_t dst_rnti);
   //-----------------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------
   
 
@@ -169,6 +170,12 @@ EnbMacMemberLteEnbCmacSapProvider::UpdateD2dInfo(uint16_t src_rnti, uint16_t dst
   const std::vector<uint8_t>&  cqi, Vector& src_pos, Vector& dst_pos)
 {
   return m_mac->DoUpdateD2dInfo(src_rnti, dst_rnti, cqi, src_pos, dst_pos);
+}
+
+void 
+EnbMacMemberLteEnbCmacSapProvider::RemainCellMode(uint16_t src_rnti, uint16_t dst_rnti)
+{
+  return m_mac->DoRemainCellMode(src_rnti, dst_rnti);
 }
 //-----------------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------
 
@@ -1442,6 +1449,7 @@ LteEnbMac::DoSendD2dCqiDetectReq (const std::vector<d2dLinkSrsConfig>& linkList)
     Ptr<D2dCqiDetectLteControlMessage> msg = Create<D2dCqiDetectLteControlMessage> ();
     msg->SetSrcDst (linkList[i].m_srcRnti, linkList[i].m_dstRnti);
     msg->SetSrsConfig (linkList[i].m_srsConfig);
+    std::cout<<"send d2d cqi detect between "<<linkList[i].m_srcRnti <<" --- "<<linkList[i].m_dstRnti<<std::endl;
     m_enbPhySapProvider->SendLteControlMessage (msg);
   }
 }
@@ -1497,11 +1505,11 @@ LteEnbMac::DoLeaveD2dMode(uint16_t src_rnti, uint16_t dst_rnti)
   NotifyUeMode(src_rnti, dst_rnti, false);
 }
 
-// void
-// LteEnbMac::DoRemainCellMode(uint16_t src_rnti, uint16_t dst_rnti)
-// {
-//   NotifyUeMode(src_rnti, dst_rnti, false);
-// }
+void
+LteEnbMac::DoRemainCellMode(uint16_t src_rnti, uint16_t dst_rnti)
+{
+  NotifyUeMode(src_rnti, dst_rnti, false);
+}
 
 
 void

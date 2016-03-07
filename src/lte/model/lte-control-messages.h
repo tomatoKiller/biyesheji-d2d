@@ -53,7 +53,7 @@ public:
    */
   enum MessageType
   {
-    DL_DCI, UL_DCI, // Downlink/Uplink Data Control Indicator
+    DL_DCI=0, UL_DCI, // Downlink/Uplink Data Control Indicator
     DL_CQI, UL_CQI, // Downlink/Uplink Channel Quality Indicator
 //--------------------------------------------------------------D 2 D------------------------------------------------
     D2D_DCI,

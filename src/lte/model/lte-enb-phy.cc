@@ -571,10 +571,12 @@ LteEnbPhy::ReceiveLteControlMessageList (std::list<Ptr<LteControlMessage> > msgL
         case LteControlMessage::D2D_CQI:
           {
             m_enbPhySapUser->ReceiveLteControlMessage (*it);
-          }
+          }  
+          break;
 //-------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------
 
         default:
+          std::cout<<(*it)->GetMessageType ()<<std::endl;
           NS_FATAL_ERROR ("Unexpected LteControlMessage type");
           break;
         }
@@ -776,7 +778,7 @@ LteEnbPhy::SendControlChannels (std::list<Ptr<LteControlMessage> > ctrlMsgList)
 {
   NS_LOG_FUNCTION (this << " eNB " << m_cellId << " start tx ctrl frame");
   // set the current tx power spectral density (full bandwidth)
-  std::cout<<"LteEnbPhy::SendControlChannels "<<std::endl;
+  // std::cout<<"LteEnbPhy::SendControlChannels "<<std::endl;
   std::vector <int> dlRb;
   for (uint8_t i = 0; i < m_dlBandwidth; i++)
     {
@@ -796,7 +798,7 @@ LteEnbPhy::SendControlChannels (std::list<Ptr<LteControlMessage> > ctrlMsgList)
 void
 LteEnbPhy::SendDataChannels (Ptr<PacketBurst> pb)
 {
-  std::cout<<"LteEnbPhy::SendDataChannels"<<std::endl;
+  // std::cout<<"LteEnbPhy::SendDataChannels"<<std::endl;
   // set the current tx power spectral density
   SetDownlinkSubChannelsWithPowerAllocation (m_dlDataRbMap);
   // send the current burts of packets

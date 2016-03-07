@@ -217,6 +217,10 @@ LteUePhy::LteUePhy (Ptr<LteSpectrumPhy> dlPhy, Ptr<LteSpectrumPhy> ulPhy)
   m_d2dAntennaModelFactory.SetTypeId (IsotropicAntennaModel::GetTypeId ());
 
   DoReset ();
+
+  m_d2dSrsPeriodity = 0;
+  m_currentD2dSrsOffset = 0;
+
 }
 
 
@@ -1202,25 +1206,27 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
             }
         }
 //----------------------------------------------------D 2 D------------------------------------------------------------
+    
     if( m_d2dSrsPeriodity != 0 ) {
-      m_currentD2dSrsOffset = (frameNo-1)*10 + (subframeNo-1) % m_d2dSrsPeriodity;
+      m_currentD2dSrsOffset = ((frameNo-1)*10 + (subframeNo-1)) % m_d2dSrsPeriodity;
       std::map< uint16_t, uint16_t>::iterator iter = m_d2dSrsOffset_tx.begin();
-      std::cout<<"schedule SendD2dSrs ... 1"<<std::endl;
+      // std::cout<<"schedule SendD2dSrs ... 1"<<" d2d periodity == "<<(uint32_t)m_d2dSrsPeriodity<<std::endl;
       for(; iter != m_d2dSrsOffset_tx.end(); ++iter)
       {
-        std::cout<<"schedule SendD2dSrs ... 2"<<std::endl;
+        // std::cout<<"schedule SendD2dSrs ... 2"<<std::endl;
         if ( m_currentD2dSrsOffset == iter->second )
         {
           std::cout<<"schedule SendD2dSrs ... 3"<<std::endl;
           Simulator::Schedule (UL_SRS_DELAY_FROM_SUBFRAME_START, 
                                                     &LteUePhy::SendD2dSrs,
                                                     this, iter->first);
+          
           break;
         }
       }
 
       /* 每个detect请求，D2D SRS 只发送一次 */
-      m_d2dSrsPeriodity = 0;
+      
     }
 //-----------------------------------------------------D 2 D  O V E R----------------------------------------------------
 
@@ -1669,7 +1675,9 @@ LteUePhy::DoSetD2dSrsConfigForTx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
 {
   NS_LOG_FUNCTION (this);
   NS_LOG_DEBUG(this << " in LteUePhy::DoSetD2dSrsConfigForTx function");
-  NS_LOG_DEBUG("UE " << dst_rnti << "d2d srs offset == "<< GetSrsSubframeOffset(d2dSrsConfig));
+
+  std::cout<<"LteUePhy::DoSetD2dSrsConfigForTx from " << m_rnti << " to " <<dst_rnti << "d2d srs config == "<< d2dSrsConfig<<std::endl;
+
   m_d2dSrsOffset_tx[ dst_rnti ] = GetSrsSubframeOffset(d2dSrsConfig);
   m_d2dSrsPeriodity = GetSrsPeriodicity(d2dSrsConfig);
 
@@ -1693,8 +1701,10 @@ LteUePhy::DoSetD2dSrsConfigForRx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
 {
   NS_LOG_FUNCTION (this);
   NS_LOG_DEBUG(this << " in LteUePhy::DoSetD2dSrsConfigForRx function");
-  m_d2dSrsOffset_rx[ dst_rnti ] = d2dSrsConfig;
+  m_d2dSrsOffset_rx[ dst_rnti ] = GetSrsSubframeOffset(d2dSrsConfig);
+  m_d2dSrsPeriodity =  GetSrsPeriodicity(d2dSrsConfig);
 
+  std::cout<<"LteUePhy::DoSetD2dSrsConfigForRx from " << dst_rnti << " to "  << m_rnti << "d2d srs config == "<< d2dSrsConfig<<std::endl;
 
 
   Ptr<LteSpectrumPhy> D2dRxPhy = CreateObject<LteSpectrumPhy> ();
@@ -1732,6 +1742,7 @@ void
 LteUePhy::SendD2dSrs(uint16_t dst_rnti)
 {
   NS_LOG_DEBUG(this << " in LteUePhy::SendD2dSrs function");
+  std::cout<<"LteUePhy::SendD2dSrs from " << m_rnti <<" to " << dst_rnti <<std::endl;
   std::vector <int> d2dRb;
   for (uint8_t i = 0; i < m_d2dBandwidth; i++)
     {
@@ -1752,16 +1763,7 @@ LteUePhy::ReceiveD2dSrs(const SpectrumValue& sinr)
 {
   NS_LOG_FUNCTION (this << sinr);
   NS_LOG_DEBUG(this << " in LteUePhy::ReceiveD2dSrs function");
-  // Values::const_iterator it;
-  // std::vector<double> ret;
-
-  // for (it = sinr.ConstValuesBegin (); it != sinr.ConstValuesEnd (); it++)
-  //   {
-  //     double sinrdb = 10 * std::log10 ((*it));
-
-  //     int16_t sinrFp = LteFfConverter::double2fpS11dot3 (sinrdb);
-  //     ret.push_back (sinrFp);
-  //   }
+  std::cout<<" in LteUePhy::ReceiveD2dSrs function UE : "<<m_rnti<< "now_srs_offset == "<< (uint32_t)m_currentD2dSrsOffset << std::endl;
 
   std::map< uint16_t, uint16_t>::iterator iter = m_d2dSrsOffset_rx.begin();
   for(; iter != m_d2dSrsOffset_rx.end(); ++iter)
@@ -1769,7 +1771,10 @@ LteUePhy::ReceiveD2dSrs(const SpectrumValue& sinr)
     if (iter->second == m_currentD2dSrsOffset)
     {
       // m_uePhySapUser->ReportD2dChannelQuality(iter->first, m_rnti, ret);
+
+
       GenerateD2dCqiReport(sinr, iter->first);
+
       break;
     }
   }
@@ -1780,6 +1785,7 @@ void
 LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
 {
   NS_LOG_DEBUG(this << " in LteUePhy::GenerateD2dCqiReport function");
+  std::cout<<"LteUePhy::GenerateD2dCqiReport from " << dst_rnti <<" to " << m_rnti <<std::endl;
   // Values::const_iterator it;
   // std::vector<double> ret;
 

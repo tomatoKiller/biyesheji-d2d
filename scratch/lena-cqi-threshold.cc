@@ -52,7 +52,7 @@ int main (int argc, char *argv[])
     LogComponentEnable("LteEnbRrc",LOG_LEVEL_DEBUG);
     // LogComponentEnable("LteEnbMac",LOG_LEVEL_DEBUG);
     // LogComponentEnable("LteEnbPhy",LOG_LEVEL_ALL);
-    LogComponentEnable("LteUePhy",LOG_LEVEL_DEBUG);
+    // LogComponentEnable("LteUePhy",LOG_LEVEL_DEBUG);
     // LogComponentEnable("LteUeMac",LOG_LEVEL_DEBUG);
     // LogComponentEnable("D2dCircleFfMacScheduler",LOG_LEVEL_ALL);
     // LogComponentEnable("LteSpectrumPhy",LOG_LEVEL_FUNCTION);

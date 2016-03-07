@@ -133,6 +133,7 @@ public:
   virtual void LeaveD2dMode(uint16_t src_rnti, uint16_t dst_rnti) = 0;
  virtual void UpdateD2dInfo(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  cqi, Vector& src_pos, Vector& dst_pos) = 0;
  virtual void SendD2dCqiDetectReq (const std::vector<d2dLinkSrsConfig >& linkList) = 0;
+ virtual void RemainCellMode(uint16_t src_rnti, uint16_t dst_rnti) = 0;
 //-----------------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------
 
 

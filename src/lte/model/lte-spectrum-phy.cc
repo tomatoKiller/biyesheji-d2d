@@ -1323,6 +1323,7 @@ LteSpectrumPhy::StartTxD2dSrsFrame (uint16_t src_rnti, uint16_t dst_rnti)
 {
   NS_LOG_FUNCTION (this);
   NS_LOG_LOGIC (this << " state: " << m_state);
+  // std::cout<<"LteSpectrumPhy::StartTxD2dSrsFrame"<<std::endl;
   
   switch (m_state)
     {
@@ -1362,7 +1363,7 @@ LteSpectrumPhy::StartTxD2dSrsFrame (uint16_t src_rnti, uint16_t dst_rnti)
       txParams->src_rnti = src_rnti;
       txParams->dst_rnti = dst_rnti;
       m_channel->StartTx (txParams);
-      Simulator::Schedule (MilliSeconds(UL_SRS_DURATION), &LteSpectrumPhy::EndTxD2dSrs, this);
+      Simulator::Schedule (UL_SRS_DURATION, &LteSpectrumPhy::EndTxD2dSrs, this);
     }
     return false;
     break;
@@ -1389,6 +1390,7 @@ void
 LteSpectrumPhy::StartRxD2dSrs (Ptr<LteSpectrumSignalParametersD2dSrsFrame> lteD2dSrsRxParams)
 {
   NS_LOG_FUNCTION (this);
+  // std::cout<<"LteSpectrumPhy::StartRxD2dSrs"<<std::endl;
   switch (m_state)
     {
     case TX_DATA:
@@ -1418,7 +1420,7 @@ LteSpectrumPhy::StartRxD2dSrs (Ptr<LteSpectrumSignalParametersD2dSrsFrame> lteD2
 
 
 
-            Simulator::Schedule (MilliSeconds(lteD2dSrsRxParams->duration), &LteSpectrumPhy::EndRxD2dSrs, 
+            Simulator::Schedule (lteD2dSrsRxParams->duration, &LteSpectrumPhy::EndRxD2dSrs, 
               this, lteD2dSrsRxParams->src_rnti, lteD2dSrsRxParams->dst_rnti);
 
            
@@ -1444,6 +1446,7 @@ void
 LteSpectrumPhy::EndRxD2dSrs (uint16_t d2dSrsSrc, uint16_t d2dSrsDst)
 {
   NS_ASSERT (m_state == RX_D2D_SRS);
+  std::cout<<"LteSpectrumPhy::EndRxD2dSrs  from "<< d2dSrsSrc << " to " << d2dSrsDst <<std::endl;
   ChangeState (IDLE);
 
   m_interferenceCtrl->EndRx ();

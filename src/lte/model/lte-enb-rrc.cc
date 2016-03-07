@@ -2599,7 +2599,7 @@ LteEnbRrc::DetectInnerCommunication()
 
   m_d2dSrsReportPeriodity = m_innerCom.size() * 2;
   m_d2dSrsOffsetCounter = 0;
-  m_d2dDetectPeriodicity = m_d2dSrsReportPeriodity;
+  // m_d2dDetectPeriodicity = m_d2dSrsReportPeriodity;
 
   D2dCommunicationDetect();
 
@@ -2679,6 +2679,7 @@ LteEnbRrc::DoReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vect
 {
   NS_LOG_FUNCTION(this);
   NS_LOG_DEBUG(this << " in LteEnbRrc::DoReceiveD2dCqi function");
+  std::cout<<" in LteEnbRrc::DoReceiveD2dCqi function:: between "<<src_rnti <<" ---- "<<dst_rnti <<"cqi == "<<(uint32_t)cqi[0]<<std::endl;
   Vector src_pos, dst_pos;
 
 	bool result = CanUseD2dMode(src_rnti, dst_rnti, cqi, src_pos, dst_pos);
@@ -2699,6 +2700,7 @@ LteEnbRrc::DoReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vect
   {
     /* leave d2d mode */
     // m_d2dPair[ std::pair<uint16_t, uint16_t>(src_rnti, dst_rnti) ] = false;
+    m_d2dSrsOffsetMap[iter->second.m_d2dSrsOffset] = false;
     m_cmacSapProvider->LeaveD2dMode(src_rnti, dst_rnti);
   }
   else if(iter->second.m_d2d && result)
@@ -2706,7 +2708,12 @@ LteEnbRrc::DoReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vect
     /* 周期性的 D2D cqi 上报 */
     m_cmacSapProvider->UpdateD2dInfo(src_rnti, dst_rnti, cqi, src_pos, dst_pos);
   }
-
+  else
+  {
+    /*  can't use d2d mode */
+    m_cmacSapProvider->RemainCellMode(src_rnti, dst_rnti);
+    m_d2dSrsOffsetMap[iter->second.m_d2dSrsOffset] = false;
+  }
 
 }
 
