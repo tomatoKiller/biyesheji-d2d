@@ -1080,12 +1080,11 @@ LteUePhy::ReceiveLteControlMessageList (std::list<Ptr<LteControlMessage> > msgLi
         for (int i = 0; i < dci.m_rbLen; i++)
           {
             d2dRb.push_back (i + dci.m_rbStart);
-            //NS_LOG_DEBUG (this << " UE RB " << i + dci.m_rbStart);
+            // NS_LOG_DEBUG (" D2D DCI : " << dci.m_tx <<" ---->>> " << dci.m_rx << "  " << "RB " << i + dci.m_rbStart);
           }
         if (dci.m_tx == m_rnti)
         {
           QueueD2dDciForTx(dci.m_rx, d2dRb);
-          // SetD2dSubChannelsForTransmission(dci.m_rx, d2dRb);
         }
         else if (dci.m_rx == m_rnti)
         {
@@ -1275,10 +1274,9 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
               pbD2d->AddPacket(packet_new);
             }
 
-            // std::cout<<"in LteUePhy :: send d2d data"<<std::endl;
+            std::cout<<" SetD2dSubChannelsForTransmission from"<<m_rnti << " to " << itDci->first << std::endl;
 
             SetD2dSubChannelsForTransmission(itDci->first, itDci->second);
-            // m_D2dTxPhy[itDci->first]->StartTxDataFrame (pbD2d, std::list<Ptr<LteControlMessage> >(), UL_DATA_DURATION);
           }
 
           m_D2dDciQueueTx.clear();
@@ -1311,6 +1309,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
   // trigger the MAC
   m_uePhySapUser->SubframeIndication (frameNo, subframeNo);
+  // NS_LOG_DEBUG("LteUePhy::  hahahah ");
 
   m_subframeNo = subframeNo;
   ++subframeNo;
@@ -1869,10 +1868,16 @@ LteUePhy::SetD2dSubChannelsForTransmission (uint16_t dst_rnti, std::vector <int>
 
   m_d2dSubChannelsForTransmission[dst_rnti] = mask;
 
+  NS_LOG_DEBUG("aaaaaa SetTxPowerSpectralDensity ");
+
   LteSpectrumValueHelper psdHelper;
   Ptr<SpectrumValue> txPsd = psdHelper.CreateTxPowerSpectralDensity (m_ulEarfcn, m_d2dBandwidth, m_d2dTxPower, mask);
 
+  NS_LOG_DEBUG("before SetTxPowerSpectralDensity ");
+  NS_ASSERT(m_D2dTxPhy.find(dst_rnti) != m_D2dTxPhy.end());
   m_D2dTxPhy[dst_rnti]->SetTxPowerSpectralDensity (txPsd);
+  NS_LOG_DEBUG("after SetTxPowerSpectralDensity ");
+
 }
 
 

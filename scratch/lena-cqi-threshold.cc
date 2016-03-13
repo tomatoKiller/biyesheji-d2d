@@ -57,8 +57,9 @@ int main (int argc, char *argv[])
     // LogComponentEnable("LteEnbMac",LOG_LEVEL_DEBUG);
     // LogComponentEnable("LteEnbPhy",LOG_LEVEL_ALL);
     // LogComponentEnable("LteUePhy",LOG_LEVEL_DEBUG);
+    // LogComponentEnable("LteSpectrumValueHelper",LOG_LEVEL_FUNCTION);
     // LogComponentEnable("LteUeMac",LOG_LEVEL_DEBUG);
-    LogComponentEnable("D2dCircleFfMacScheduler",LOG_LEVEL_DEBUG);
+    LogComponentEnable("D2dCircleFfMacScheduler",LOG_LEVEL_ALL);
     // LogComponentEnable("LteSpectrumPhy",LOG_LEVEL_FUNCTION);
     // LogComponentEnable("MultiModelSpectrumChannel",LOG_LEVEL_DEBUG);
     // LogComponentEnable("MultiModelSpectrumChannel",LOG_LEVEL_LOGIC);
@@ -72,10 +73,10 @@ int main (int argc, char *argv[])
   // to load a previously created default attribute file
   // ./waf --command-template="%s --ns3::ConfigStore::Filename=input-defaults.txt --ns3::ConfigStore::Mode=Load --ns3::ConfigStore::FileFormat=RawText" --run src/lte/examples/lena-first-sim
 
-    runnum = 2;
+    runnum = 0;
     while(runnum++ < 10)
   {
-    if (runnum == 4)
+    if (runnum == 2)
     {
       break;
     }

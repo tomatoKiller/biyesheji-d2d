@@ -14,6 +14,7 @@
 #include <ns3/boolean.h>
 #include "ns3/lte-amc.h"
 #include <ns3/lte-amc.h>
+#include <cmath>
 
 namespace ns3 {
 
@@ -116,6 +117,8 @@ D2dCircleFfMacScheduler::D2dCircleFfMacScheduler(): m_cschedSapUser (0), m_sched
   m_cschedSapProvider = new D2dCircleSchedulerMemberCschedSapProvider (this);
   m_schedSapProvider = new D2dCircleSchedulerMemberSchedSapProvider (this);
   m_amc = CreateObject <LteAmc> ();
+  for(int i = 0 ; i < 6; ++i)
+  	m_sixParts.push_back(std::vector<uint16_t>());
 }
 
 D2dCircleFfMacScheduler::~D2dCircleFfMacScheduler ()
@@ -193,22 +196,73 @@ D2dCircleFfMacScheduler::DoCschedCellConfigReq (const struct D2dFfMacCschedSapPr
   return;
 }
 
-void D2dCircleFfMacScheduler::UpdateResConflictMap(const d2dlink &link, const d2dlink_state& sta)
+void D2dCircleFfMacScheduler::UpdateResConflictMap(const d2dlink &link, const d2dlink_state& sta, bool add)
 {
-	std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter = m_d2dlinks.begin();
-  for(;iter != m_d2dlinks.end(); ++iter)
+	if (add)
+	{
+		std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter = m_d2dlinks.begin();
+	  for(;iter != m_d2dlinks.end(); ++iter)
+	  {
+	  	if (!FreeInterference(link, iter->first))
+	  	{
+	  		m_resConflictMap[std::pair<uint16_t, uint16_t>(sta.m_linkId, iter->second.m_linkId)] = true;
+	  		m_resConflictMap[std::pair<uint16_t, uint16_t>(iter->second.m_linkId, sta.m_linkId)] = true;
+	  	}
+	  	else
+	  	{
+	  		m_resConflictMap[std::pair<uint16_t, uint16_t>(sta.m_linkId, iter->second.m_linkId)] = false;
+	  		m_resConflictMap[std::pair<uint16_t, uint16_t>(iter->second.m_linkId, sta.m_linkId)] = false;
+	  	}
+	  }
+	}
+	else
+	{
+
+	}
+	
+}
+
+uint8_t 
+D2dCircleFfMacScheduler::GetPartOfD2dLink(const d2dlink& d)
+{
+	double d_x = ( d.m_src.m_position.x + d.m_dst.m_position.x) / 2.0;
+  double d_y = ( d.m_src.m_position.y + d.m_dst.m_position.y) / 2.0;
+
+  double angel = std::tan( d_y / d_x );
+  if( angel >= 0 && angel < std::sqrt(3) / 3)
   {
-  	if (!FreeInterference(link, iter->first))
+  	if (d_y >= 0)
   	{
-  		m_resConflictMap[std::pair<uint16_t, uint16_t>(sta.m_linkId, iter->second.m_linkId)] = true;
-  		m_resConflictMap[std::pair<uint16_t, uint16_t>(iter->second.m_linkId, sta.m_linkId)] = true;
+  		return 0;
   	}
   	else
   	{
-  		m_resConflictMap[std::pair<uint16_t, uint16_t>(sta.m_linkId, iter->second.m_linkId)] = false;
-  		m_resConflictMap[std::pair<uint16_t, uint16_t>(iter->second.m_linkId, sta.m_linkId)] = false;
+  		return 3;
   	}
   }
+  else if( angel <= 0 && angel > -1 * std::sqrt(3) / 3  )
+  {
+  	if (d_y >= 0)
+  	{
+  		return 2;
+  	}
+  	else
+  	{
+  		return 5;
+  	}
+  }
+  else
+  {
+  	if (d_y >= 0)
+  	{
+  		return 1;
+  	}
+  	else
+  	{
+  		return 4;
+  	}
+  }
+
 }
 
 void
@@ -224,10 +278,19 @@ D2dCircleFfMacScheduler::DoCschedUeConfigReq (const struct D2dFfMacCschedSapProv
   	d2dlink_state sta;
   	sta.m_cqiList = params.m_cqiList;
   	sta.m_linkId = m_d2dlink_id_counter++;
+  	sta.m_part = GetPartOfD2dLink(d);
 
-  	UpdateResConflictMap(d, sta);
+  	UpdateResConflictMap(d, sta, true);
 
     m_d2dlinks.push_back(std::make_pair<d2dlink, d2dlink_state> (d, sta));
+
+    // below is for 6 parts resource allocation
+    NS_LOG_DEBUG("link " << params.m_srcrnti << " to " << params.m_dstrnti <<" part "<< (uint32_t)GetPartOfD2dLink(d));
+    
+    m_sixParts[GetPartOfD2dLink(d)].push_back(sta.m_linkId);
+
+    NS_LOG_DEBUG("after six part link allocation");
+    
 
   }
   else
@@ -238,10 +301,28 @@ D2dCircleFfMacScheduler::DoCschedUeConfigReq (const struct D2dFfMacCschedSapProv
     {
       if (iter->first == d)
       {
+      	UpdateResConflictMap(d, iter->second, false);
+
+      	std::vector<uint16_t>::iterator itlink = m_sixParts[GetPartOfD2dLink(d)].begin();
+
+      	for(;itlink != m_sixParts[GetPartOfD2dLink(d)].end(); ++itlink)
+      	{
+      		if (iter->second.m_linkId == (*itlink))
+      		{
+      			break;
+      		}
+      	}
+
+      	NS_ASSERT(itlink != m_sixParts[GetPartOfD2dLink(d)].end());
+
+      	m_sixParts[GetPartOfD2dLink(d)].erase(itlink);
+
         m_d2dlinks.erase(iter);
         break;
       }
     }
+
+
   	
   }
 
@@ -282,11 +363,144 @@ D2dCircleFfMacScheduler::DoGetD2dResUseInfo ()
   return ret;
 }
 
+void 
+D2dCircleFfMacScheduler::DoSchedReqSixParts(const struct D2dFfMacSchedSapProvider::SchedReqParameters& params)
+{
+	// 6 parts resource allocation
+
+	D2dFfMacSchedSapUser::SchedConfigIndParameters ret;
+
+	std::vector <bool> rbMap;
+	rbMap.resize(m_cschedCellConfig.m_rbs, false);
+
+	m_resAllocMap.clear();
+	m_dciAllocMap.clear();
+
+	std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter = m_d2dlinks.begin();
+
+
+	for( ;iter != m_d2dlinks.end(); ++iter)
+	{
+		// NS_LOG_DEBUG("alloc link " << (uint32_t)iter->second.m_linkId <<" part =="  )
+		D2dDciListElement_s d2ddci;
+
+		d2ddci.m_linkId = iter->second.m_linkId;
+		d2ddci.m_tx = iter->first.m_src.m_rnti;
+		d2ddci.m_rx = iter->first.m_dst.m_rnti;
+
+		uint8_t targetPart = (iter->second.m_part + 3) % 6;
+
+		
+
+		for (uint8_t i = 0; i < m_sixParts[targetPart].size(); ++i)
+		{
+			uint16_t linkId = m_sixParts[targetPart][i];
+
+			if( m_dciAllocMap.find(linkId) != m_dciAllocMap.end() )
+			{
+				uint8_t targetRb = m_dciAllocMap[linkId];
+
+				// can targetRb be reused ?
+				uint8_t k = 0;
+				for(; k < m_sixParts[iter->second.m_part].size(); ++k)
+				{
+					if (m_dciAllocMap.find(m_sixParts[iter->second.m_part][k]) != m_dciAllocMap.end())
+					{
+						if ( m_dciAllocMap[ m_sixParts[iter->second.m_part][k] ] == targetRb)
+							break;
+					}
+				}
+
+				if (k == m_sixParts[iter->second.m_part].size())
+				{
+					// reuse targetRb
+					d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
+					d2ddci.m_rbStart = targetRb;
+					NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<< " reuse rb"
+							 << (uint32_t)targetRb << " part " << (uint32_t)iter->second.m_part
+							 << " and "
+							 << (uint32_t)targetRb + 1<< " part " << (uint32_t)targetPart);
+					goto alloc_once;
+				}
+
+			}
+		}
+
+
+		//alloc new resource
+		{
+			int r = 0;
+			for(; r < m_cschedCellConfig.m_rbs; ++r)
+			{
+				if( rbMap[r] == false )
+					break;
+			}
+
+			if(r + m_cschedCellConfig.m_rbsperuser > m_cschedCellConfig.m_rbs )
+			{
+				/* 资源不足，无法继续分配 */
+				continue;
+			}
+			else
+			{
+				d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
+				d2ddci.m_rbStart = r;
+				for(int j = 0; j < m_cschedCellConfig.m_rbsperuser; ++j)
+				{
+					rbMap[r++] = true;
+				}
+				NS_LOG_DEBUG("alloc new RB "<<(uint32_t)d2ddci.m_rbStart << " and " << (uint32_t)d2ddci.m_rbStart+1
+					<< " to link " <<iter->second.m_linkId << " part " << (uint32_t)iter->second.m_part);
+				
+			}
+		}
+		
+
+alloc_once:
+
+		m_resAllocMap[d2ddci.m_rbStart].push_back(iter->second.m_linkId);
+		m_dciAllocMap[iter->second.m_linkId] = d2ddci.m_rbStart;
+
+		uint8_t cqi = iter->second.m_cqiList[0];
+
+		NS_ASSERT( cqi != 0);
+
+		d2ddci.m_cqi = cqi;
+
+		d2ddci.m_mcs = m_amc->GetMcsFromCqi (cqi);
+
+		ret.m_dciList.push_back(d2ddci);
+
+	}
+
+	int sum = 0;
+	for (uint8_t i = 0; i < rbMap.size(); ++i)
+	{
+		if (rbMap[i])
+		{
+			sum++;
+		}
+	}
+
+	m_resUsePercent = sum * 1.0 / rbMap.size();
+
+	NS_ASSERT(m_schedSapUser != 0);
+
+	NS_LOG_DEBUG("D2dCircleFfMacScheduler::DoSchedReq :: " << m_d2dlinks.size() << " d2dlinks ");
+	// NS_LOG_DEBUG("d2d resource usage == " << m_resUsePercent);
+	m_schedSapUser->SchedConfigInd (ret);
+
+}
+
 
 void
 D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::SchedReqParameters& params)
 {
 	NS_LOG_FUNCTION (this);
+
+
+	// use six parts resource allocation 
+	// return DoSchedReqSixParts(params);
 	
 	D2dFfMacSchedSapUser::SchedConfigIndParameters ret;
 
@@ -300,7 +514,7 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 	std::vector <bool> rbMap;
 	rbMap.resize(m_cschedCellConfig.m_rbs, false);
 	size_t  rbAllocIndex = 0;
-	m_resRunOut = false;
+	
 
 	m_resAllocMap.clear();
 	m_dciAllocMap.clear();
@@ -312,6 +526,9 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 		d2ddci.m_linkId = iter->second.m_linkId;
 		d2ddci.m_tx = iter->first.m_src.m_rnti;
 		d2ddci.m_rx = iter->first.m_dst.m_rnti;
+		d2ddci.m_rbStart = 100;
+
+		m_resRunOut = false;
 
 		if (iter == m_d2dlinks.begin())
 		{
@@ -324,7 +541,7 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 		  // NS_LOG_DEBUG("alloc new RB "<<0<< " and " << 1);
 		  NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<<" alloc new RB "<<0<< " and " << 1);
 
-
+		  // rbAllocIndex++;
                 
 		}
 		else 
@@ -364,7 +581,8 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 						/* 资源不足，无法继续分配 */
 						m_resRunOut = true;
 						NS_LOG_DEBUG("d2d resource out of use");
-						goto alloc_end;
+
+						break;
 					}
 					else
 					{
@@ -400,10 +618,17 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 	      
 		}
 
+		if (m_resRunOut)
+		{
+			continue;
+		}
+
 		rbAllocIndex++;
 
 		m_resAllocMap[d2ddci.m_rbStart].push_back(iter->second.m_linkId);
 		m_dciAllocMap[iter->second.m_linkId] = d2ddci.m_rbStart;
+
+		// NS_LOG_DEBUG() d2ddci.m_rbStart
 
 		uint8_t cqi = iter->second.m_cqiList[0];
 
@@ -414,10 +639,13 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 		d2ddci.m_mcs = m_amc->GetMcsFromCqi (cqi);
 
 		ret.m_dciList.push_back(d2ddci);
+
+		// NS_LOG_DEBUG("alloc link " << d2ddci.m_tx << " to " << d2ddci.m_rx << " rbStart = " << (uint32_t)d2ddci.m_rbStart << " rbLen = "
+		// 	<< (uint32_t)d2ddci.m_rbLen);
     
 	}
 
-alloc_end:
+// alloc_end:
 
 	int sum = 0;
 	for (uint8_t i = 0; i < rbMap.size(); ++i)

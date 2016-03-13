@@ -2827,6 +2827,10 @@ LteEnbRrc::CanUseD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector
     } 
     else
     {
+      // uncomment this line means that no mode selection be used
+      std::cout<<"no mode selection : "<< src_rnti <<" and " <<dst_rnti<<" can use d2d mode"<<std::endl;
+      return true;
+
     		struct d2dResUseInfo_s d2dru = m_cmacSapProvider->GetD2dResUseInfo() ;
     		double d2dResUsePercent = d2dru.m_dru;
         std::cout<<"LteEnbRrc::CanUseD2dMode  d2dResUsePercent == " << d2dResUsePercent << std::endl;

@@ -93,6 +93,7 @@ struct d2dResUseInfo_s
  {
     uint16_t  m_linkId;
     std::vector< uint8_t >   m_cqiList;
+    uint8_t   m_part;
  };
 
 
