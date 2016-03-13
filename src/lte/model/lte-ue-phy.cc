@@ -40,6 +40,7 @@
 #include <ns3/lte-common.h>
 #include <ns3/pointer.h>
 #include <ns3/boolean.h>
+ #include <cstdlib>
 #include <ns3/lte-ue-power-control.h>
 
 namespace ns3 {
@@ -205,6 +206,7 @@ LteUePhy::LteUePhy (Ptr<LteSpectrumPhy> dlPhy, Ptr<LteSpectrumPhy> ulPhy)
     m_rsrpSinrSampleCounter (0)
 {
   m_amc = CreateObject <LteAmc> ();
+  // m_amc -> SetAttribute("AmcModel", "PiroEW2010");
   m_powerControl = CreateObject <LteUePowerControl> ();
   m_uePhySapProvider = new UeMemberLteUePhySapProvider (this);
   m_ueCphySapProvider = new MemberLteUeCphySapProvider<LteUePhy> (this);
@@ -220,6 +222,8 @@ LteUePhy::LteUePhy (Ptr<LteSpectrumPhy> dlPhy, Ptr<LteSpectrumPhy> ulPhy)
 
   m_d2dSrsPeriodity = 0;
   m_currentD2dSrsOffset = 0;
+
+  m_d2dRandomCqi = 0;
 
 }
 
@@ -1216,7 +1220,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
         // std::cout<<"schedule SendD2dSrs ... 2"<<std::endl;
         if ( m_currentD2dSrsOffset == iter->second )
         {
-          std::cout<<"schedule SendD2dSrs ... 3"<<std::endl;
+          
           Simulator::Schedule (UL_SRS_DELAY_FROM_SUBFRAME_START, 
                                                     &LteUePhy::SendD2dSrs,
                                                     this, iter->first);
@@ -1249,10 +1253,6 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
           std::map<uint16_t, std::vector<int> >::iterator itDci = m_D2dDciQueueTx.begin();
           for(; itDci != m_D2dDciQueueTx.end(); ++itDci)
           {
-            // if (!itPhy->second->GetD2dMode())
-            // {
-            //   continue;
-            // }
             
             Ptr<PacketBurst> pbD2d = CreateObject <PacketBurst> ();
             std::list<Ptr<Packet> >::const_iterator itPa = pb->Begin();
@@ -1275,10 +1275,10 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
               pbD2d->AddPacket(packet_new);
             }
 
-            std::cout<<"in LteUePhy :: send d2d data"<<std::endl;
+            // std::cout<<"in LteUePhy :: send d2d data"<<std::endl;
 
             SetD2dSubChannelsForTransmission(itDci->first, itDci->second);
-            m_D2dTxPhy[itDci->first]->StartTxDataFrame (pbD2d, std::list<Ptr<LteControlMessage> >(), UL_DATA_DURATION);
+            // m_D2dTxPhy[itDci->first]->StartTxDataFrame (pbD2d, std::list<Ptr<LteControlMessage> >(), UL_DATA_DURATION);
           }
 
           m_D2dDciQueueTx.clear();
@@ -1641,13 +1641,15 @@ LteUePhy::DoOpenD2dMode(uint16_t src_rnti, uint16_t dst_rnti)
 {
   NS_LOG_FUNCTION (this);
   NS_LOG_DEBUG(this << " in LteUePhy::DoOpenD2dMode function");
-  // m_d2dMode = true;
+  
   if (m_rnti == src_rnti)
   {
+    m_d2dSrsOffset_tx.erase(dst_rnti);
     m_D2dTxPhy[dst_rnti]->SetD2dMode(true);
   }
   else if (dst_rnti == m_rnti)
   {
+    m_d2dSrsOffset_rx.erase(src_rnti);
     m_D2dRxPhy[src_rnti]->SetD2dMode(true);
   }
 }
@@ -1676,7 +1678,7 @@ LteUePhy::DoSetD2dSrsConfigForTx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
   NS_LOG_FUNCTION (this);
   NS_LOG_DEBUG(this << " in LteUePhy::DoSetD2dSrsConfigForTx function");
 
-  std::cout<<"LteUePhy::DoSetD2dSrsConfigForTx from " << m_rnti << " to " <<dst_rnti << "d2d srs config == "<< d2dSrsConfig<<std::endl;
+  // std::cout<<"LteUePhy::DoSetD2dSrsConfigForTx from " << m_rnti << " to " <<dst_rnti << "d2d srs config == "<< d2dSrsConfig<<std::endl;
 
   m_d2dSrsOffset_tx[ dst_rnti ] = GetSrsSubframeOffset(d2dSrsConfig);
   m_d2dSrsPeriodity = GetSrsPeriodicity(d2dSrsConfig);
@@ -1704,7 +1706,7 @@ LteUePhy::DoSetD2dSrsConfigForRx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
   m_d2dSrsOffset_rx[ dst_rnti ] = GetSrsSubframeOffset(d2dSrsConfig);
   m_d2dSrsPeriodity =  GetSrsPeriodicity(d2dSrsConfig);
 
-  std::cout<<"LteUePhy::DoSetD2dSrsConfigForRx from " << dst_rnti << " to "  << m_rnti << "d2d srs config == "<< d2dSrsConfig<<std::endl;
+  // std::cout<<"LteUePhy::DoSetD2dSrsConfigForRx from " << dst_rnti << " to "  << m_rnti << "d2d srs config == "<< d2dSrsConfig<<std::endl;
 
 
   Ptr<LteSpectrumPhy> D2dRxPhy = CreateObject<LteSpectrumPhy> ();
@@ -1719,7 +1721,9 @@ LteUePhy::DoSetD2dSrsConfigForRx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
   D2dRxPhy->SetAntenna( GetUplinkSpectrumPhy()->GetRxAntenna() );
   D2dRxPhy->SetLtePhyRxDataEndOkCallback (MakeCallback (&LteUePhy::D2dPhyPduReceived, this));
   D2dRxPhy->SetD2dDataCqiRxEndOkCallback(MakeCallback (&LteUePhy::GenerateD2dCqiReport, this));
-  D2dRxPhy->SetNoisePowerSpectralDensity (m_noisePsd);
+
+  m_d2dNoisePsd = LteSpectrumValueHelper::CreateNoisePowerSpectralDensity (m_ulEarfcn, m_d2dBandwidth, m_noiseFigure);
+  D2dRxPhy->SetNoisePowerSpectralDensity (m_d2dNoisePsd);
   m_d2dChannel->AddRx (D2dRxPhy);
 
   Ptr<LteChunkProcessor> pCtrl = Create<LteChunkProcessor> ();
@@ -1763,7 +1767,7 @@ LteUePhy::ReceiveD2dSrs(const SpectrumValue& sinr)
 {
   NS_LOG_FUNCTION (this << sinr);
   NS_LOG_DEBUG(this << " in LteUePhy::ReceiveD2dSrs function");
-  std::cout<<" in LteUePhy::ReceiveD2dSrs function UE : "<<m_rnti<< "now_srs_offset == "<< (uint32_t)m_currentD2dSrsOffset << std::endl;
+  std::cout<<" in LteUePhy::ReceiveD2dSrs function UE : "<<m_rnti<< " now_srs_offset ==  "<< (uint32_t)m_currentD2dSrsOffset << std::endl;
 
   std::map< uint16_t, uint16_t>::iterator iter = m_d2dSrsOffset_rx.begin();
   for(; iter != m_d2dSrsOffset_rx.end(); ++iter)
@@ -1785,7 +1789,7 @@ void
 LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
 {
   NS_LOG_DEBUG(this << " in LteUePhy::GenerateD2dCqiReport function");
-  std::cout<<"LteUePhy::GenerateD2dCqiReport from " << dst_rnti <<" to " << m_rnti <<std::endl;
+  
   // Values::const_iterator it;
   // std::vector<double> ret;
 
@@ -1802,6 +1806,13 @@ LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
 
   SpectrumValue newSinr = sinr;
   std::vector<int> cqi = m_amc->CreateCqiFeedbacks (newSinr, m_d2dBandwidth);
+
+   Values::const_iterator it= sinr.ConstValuesBegin (); 
+
+  std::cout<<"GenerateD2dCqiReport from " << dst_rnti <<" to " << m_rnti <<" sinr == " << *it <<std::endl;
+
+
+  
 
   int nLayer = TransmissionModesLayers::TxMode2LayerNum (m_transmissionMode);
   int nbSubChannels = cqi.size ();
@@ -1838,6 +1849,12 @@ LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
         }
     }
 
+    /*此处随机产生一个D2D CQI 值 */
+
+  if( m_d2dRandomCqi == 0 )
+    m_d2dRandomCqi = ( rand() % 15 ) + 1;
+
+  d2dcqi.m_wbCqi[0] = m_d2dRandomCqi;
   msg->SetD2dCqi(d2dcqi);
 
   DoSendLteControlMessage(msg);

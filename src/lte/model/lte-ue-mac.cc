@@ -862,7 +862,7 @@ void
 LteUeMac::CommunicationModeChange(Ptr<ComModeLteControlMessage> msg)
 {
   NS_LOG_DEBUG(this << " in LteUeMac::CommunicationModeChange function");
-  std::cout<<" in LteUeMac::CommunicationModeChange function"<<std::endl;
+  // std::cout<<" in LteUeMac::CommunicationModeChange function UE " << m_rnti<<std::endl;
   if( msg->GetMode() )
   {
     /*  enter d2d mode */

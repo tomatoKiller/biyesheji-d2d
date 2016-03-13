@@ -40,18 +40,17 @@ for rt, dirs, filenames in os.walk(sys.argv[1]):
 			if begin == False:
 				continue
 
-			if len(term) == 8:
-				throughput += CqiToDataRate[int(term[-2])] * int(term[-1])
-			elif len(term) == 10:
-				throughput += CqiToDataRate[int(term[-2])] * int(term[-1])
-				throughput += CqiToDataRate[int(term[-4])] * int(term[-3])
-			# if slot == term[0]:
-			# 	throughput += CqiToDataRate[int(term[-2])]
-				
-			if slot != term[0]:
-				line_num+=1
-					# print throughput
-				slot = term[0]
-				# throughput = 0
+			if not (term[3] == '0' and term[4] == '0'):
+				if len(term) == 8:
+					throughput += CqiToDataRate[int(term[-2])] * int(term[-1])
+				elif len(term) == 10:
+					throughput += CqiToDataRate[int(term[-2])] * int(term[-1])
+					throughput += CqiToDataRate[int(term[-4])] * int(term[-3])
 
-		print files, throughput / line_num
+					
+				if slot != term[0]:
+					line_num+=1
+					slot = term[0]
+
+
+		print files[-3:],  throughput / line_num  

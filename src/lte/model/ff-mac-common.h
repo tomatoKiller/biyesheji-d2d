@@ -134,6 +134,7 @@ struct UlDciListElement_s
   uint8_t   m_rbLen;
   uint16_t  m_tbSize;
   uint8_t   m_mcs;
+  uint8_t   m_cqi;
   uint8_t   m_ndi;
   uint8_t   m_cceIndex;
   uint8_t   m_aggrLevel;
@@ -163,7 +164,7 @@ struct D2dDciListElement_s
 struct D2dCqiListElement_s
 {
   uint16_t  m_srcRnti;
-  uint8_t   m_dstRnti;
+  uint16_t   m_dstRnti;
 
   std::vector <uint8_t> m_wbCqi;
 

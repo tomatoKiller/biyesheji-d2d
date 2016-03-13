@@ -193,6 +193,24 @@ D2dCircleFfMacScheduler::DoCschedCellConfigReq (const struct D2dFfMacCschedSapPr
   return;
 }
 
+void D2dCircleFfMacScheduler::UpdateResConflictMap(const d2dlink &link, const d2dlink_state& sta)
+{
+	std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter = m_d2dlinks.begin();
+  for(;iter != m_d2dlinks.end(); ++iter)
+  {
+  	if (!FreeInterference(link, iter->first))
+  	{
+  		m_resConflictMap[std::pair<uint16_t, uint16_t>(sta.m_linkId, iter->second.m_linkId)] = true;
+  		m_resConflictMap[std::pair<uint16_t, uint16_t>(iter->second.m_linkId, sta.m_linkId)] = true;
+  	}
+  	else
+  	{
+  		m_resConflictMap[std::pair<uint16_t, uint16_t>(sta.m_linkId, iter->second.m_linkId)] = false;
+  		m_resConflictMap[std::pair<uint16_t, uint16_t>(iter->second.m_linkId, sta.m_linkId)] = false;
+  	}
+  }
+}
+
 void
 D2dCircleFfMacScheduler::DoCschedUeConfigReq (const struct D2dFfMacCschedSapProvider::CschedUeConfigReqParameters& params)
 {
@@ -206,7 +224,9 @@ D2dCircleFfMacScheduler::DoCschedUeConfigReq (const struct D2dFfMacCschedSapProv
   	d2dlink_state sta;
   	sta.m_cqiList = params.m_cqiList;
   	sta.m_linkId = m_d2dlink_id_counter++;
-    // m_d2dlinks.insert(std::make_pair<d2dlink, d2dlink_state> (d, sta));
+
+  	UpdateResConflictMap(d, sta);
+
     m_d2dlinks.push_back(std::make_pair<d2dlink, d2dlink_state> (d, sta));
 
   }
@@ -266,136 +286,155 @@ D2dCircleFfMacScheduler::DoGetD2dResUseInfo ()
 void
 D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::SchedReqParameters& params)
 {
- 	NS_LOG_FUNCTION (this);
-
-  D2dFfMacSchedSapUser::SchedConfigIndParameters ret;
+	NS_LOG_FUNCTION (this);
+	
+	D2dFfMacSchedSapUser::SchedConfigIndParameters ret;
 
  	m_rra = rand() % 2 == 1;
 
- 	std::sort(m_d2dlinks.begin(), m_d2dlinks.end(), comparator(m_rra));
- 	
- 	std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter = m_d2dlinks.begin();
+	std::sort(m_d2dlinks.begin(), m_d2dlinks.end(), comparator(m_rra));
+	
+	std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter = m_d2dlinks.begin();
 
   
-  std::vector <bool> rbMap;
-  rbMap.resize(m_cschedCellConfig.m_rbs, false);
-  size_t  rbAllocIndex = 0;
-  m_resRunOut = false;
+	std::vector <bool> rbMap;
+	rbMap.resize(m_cschedCellConfig.m_rbs, false);
+	size_t  rbAllocIndex = 0;
+	m_resRunOut = false;
 
- 	for( ;iter != m_d2dlinks.end(); ++iter)
- 	{
-    D2dDciListElement_s d2ddci;
+	m_resAllocMap.clear();
+	m_dciAllocMap.clear();
 
-    d2ddci.m_linkId = iter->second.m_linkId;
-    d2ddci.m_tx = iter->first.m_src.m_rnti;
-    d2ddci.m_rx = iter->first.m_dst.m_rnti;
+	for( ;iter != m_d2dlinks.end(); ++iter)
+	{
+		D2dDciListElement_s d2ddci;
 
-    if (iter == m_d2dlinks.begin())
-    {
-      d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
-      d2ddci.m_rbStart = 0;
-      for(uint8_t i = 0; i < m_cschedCellConfig.m_rbsperuser; ++i)
-      {
-        rbMap[i] = true;
-      }
-          
-    }
-    else 
-    {
-      std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter_bef = iter - 1;
-      int index_bef = rbAllocIndex - 1;
+		d2ddci.m_linkId = iter->second.m_linkId;
+		d2ddci.m_tx = iter->first.m_src.m_rnti;
+		d2ddci.m_rx = iter->first.m_dst.m_rnti;
 
-      while(1) 
-      {
+		if (iter == m_d2dlinks.begin())
+		{
+		  d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
+		  d2ddci.m_rbStart = 0;
+		  for(uint8_t i = 0; i < m_cschedCellConfig.m_rbsperuser; ++i)
+		  {
+		    rbMap[i] = true;
+		  }
+		  // NS_LOG_DEBUG("alloc new RB "<<0<< " and " << 1);
+		  NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<<" alloc new RB "<<0<< " and " << 1);
+
+
+                
+		}
+		else 
+		{
+			std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter_bef = iter - 1;
+			int index_bef = rbAllocIndex - 1;
+
+			while(1) 
+			{
         
-        if (iter_bef == m_d2dlinks.begin())
-        {
-          //
-          if (iter_bef->first.m_src == iter->first.m_src || FreeInterference(iter_bef->first, iter->first) )
-          {
-            /* 可以使用相同的资源 */
-            d2ddci.m_rbStart = ret.m_dciList[index_bef].m_rbStart;
-            d2ddci.m_rbLen = ret.m_dciList[index_bef].m_rbLen;
-            break;
-          }
+				if (iter_bef == m_d2dlinks.begin())
+				{
+					//
+					if (iter_bef->first.m_src == iter->first.m_src || CanUseSameRes(iter->second, iter_bef->second) )
+					{
+						/* 可以使用相同的资源 */
+						NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<< " reuse "
+							"link " << iter_bef->first.m_src.m_rnti << " to "<< iter_bef->first.m_dst.m_rnti);
+						d2ddci.m_rbStart = ret.m_dciList[index_bef].m_rbStart;
+						d2ddci.m_rbLen = ret.m_dciList[index_bef].m_rbLen;
+						break;
+					}
 
 
-          /* 无法复用现有资源，分配新资源 */
-          d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
-          d2ddci.m_rbStart = 0;
-          int i = 0;
-          for(; i < m_cschedCellConfig.m_rbs; ++i)
-          {
-            if( rbMap[i] == false )
-              break;
-          }
+					/* 无法复用现有资源，分配新资源 */
+					d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
+					d2ddci.m_rbStart = 0;
+					int i = 0;
+					for(; i < m_cschedCellConfig.m_rbs; ++i)
+					{
+						if( rbMap[i] == false )
+							break;
+					}
 
-          if(i + m_cschedCellConfig.m_rbsperuser > m_cschedCellConfig.m_rbs )
-          {
-            /* 资源不足，无法继续分配 */
-            m_resRunOut = true;
-            goto alloc_end;
-          }
-          else
-          {
-            d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
-            d2ddci.m_rbStart = i;
-            for(int j = 0; j < m_cschedCellConfig.m_rbsperuser; ++j)
-            {
-              rbMap[i++] = true;
-            }
-          }
+					if(i + m_cschedCellConfig.m_rbsperuser > m_cschedCellConfig.m_rbs )
+					{
+						/* 资源不足，无法继续分配 */
+						m_resRunOut = true;
+						NS_LOG_DEBUG("d2d resource out of use");
+						goto alloc_end;
+					}
+					else
+					{
+						d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
+						d2ddci.m_rbStart = i;
+						for(int j = 0; j < m_cschedCellConfig.m_rbsperuser; ++j)
+						{
+							rbMap[i++] = true;
+						}
+						NS_LOG_DEBUG("alloc new RB "<<(uint32_t)d2ddci.m_rbStart << " and " << (uint32_t)d2ddci.m_rbStart+1);
+						break;
+					}
+    		
+				}
+				else
+				{
+					/* 寻找可复用的现有资源 */
+					if ( iter_bef->first.m_src == iter->first.m_src || CanUseSameRes(iter->second, iter_bef->second) )
+					{
+						/* 可以使用相同的资源 */
+						NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<< " reuse "
+							"link " << iter_bef->first.m_src.m_rnti << " to "<< iter_bef->first.m_dst.m_rnti);
+						d2ddci.m_rbStart = ret.m_dciList[index_bef].m_rbStart;
+						d2ddci.m_rbLen = ret.m_dciList[index_bef].m_rbLen;
+						break;
+					}
 
-          break;
-        }
-        else
-        {
-          /* 寻找可复用的现有资源 */
-          if (iter_bef->first.m_src == iter->first.m_src || FreeInterference(iter_bef->first, iter->first) )
-          {
-            /* 可以使用相同的资源 */
-            d2ddci.m_rbStart = ret.m_dciList[index_bef].m_rbStart;
-            d2ddci.m_rbLen = ret.m_dciList[index_bef].m_rbLen;
-            break;
-          }
+					--iter_bef;
+					--index_bef;
+				}
 
-          --iter_bef;
-          --index_bef;
-        }
+			}
+	      
+		}
 
-      }
-      
-    }
+		rbAllocIndex++;
 
-    rbAllocIndex++;
+		m_resAllocMap[d2ddci.m_rbStart].push_back(iter->second.m_linkId);
+		m_dciAllocMap[iter->second.m_linkId] = d2ddci.m_rbStart;
 
+		uint8_t cqi = iter->second.m_cqiList[0];
 
-    uint8_t cqi = iter->second.m_cqiList[0];
+		NS_ASSERT( cqi != 0);
 
-    NS_ASSERT( cqi != 0);
+		d2ddci.m_cqi = cqi;
 
-    d2ddci.m_cqi = cqi;
- 
-    d2ddci.m_mcs = m_amc->GetMcsFromCqi (cqi);
+		d2ddci.m_mcs = m_amc->GetMcsFromCqi (cqi);
 
-    ret.m_dciList.push_back(d2ddci);
+		ret.m_dciList.push_back(d2ddci);
     
- 	}
+	}
 
 alloc_end:
-  int sum = 0;
-  for (uint8_t i = 0; i < rbMap.size(); ++i)
-  {
-    if (rbMap[i])
-    {
-      sum++;
-    }
-  }
 
-  m_resUsePercent = sum * 1.0 / rbMap.size();
+	int sum = 0;
+	for (uint8_t i = 0; i < rbMap.size(); ++i)
+	{
+		if (rbMap[i])
+		{
+			sum++;
+		}
+	}
 
-  NS_ASSERT(m_schedSapUser != 0);
-  m_schedSapUser->SchedConfigInd (ret);
+	m_resUsePercent = sum * 1.0 / rbMap.size();
+
+	NS_ASSERT(m_schedSapUser != 0);
+
+	NS_LOG_DEBUG("D2dCircleFfMacScheduler::DoSchedReq :: " << m_d2dlinks.size() << " d2dlinks ");
+	NS_LOG_DEBUG("d2d resource usage == " << m_resUsePercent);
+	m_schedSapUser->SchedConfigInd (ret);
 
 }
 
@@ -403,7 +442,15 @@ alloc_end:
 bool
 D2dCircleFfMacScheduler::FreeInterference(const d2dlink& d1, const d2dlink& d2)
 {
-  double distance = sqrt( pow(d1.m_src.m_position.x - d2.m_src.m_position.x, 2) + pow(d1.m_src.m_position.y - d2.m_src.m_position.y, 2) );
+  
+  double d1_x = ( d1.m_src.m_position.x + d1.m_dst.m_position.x) / 2.0;
+  double d1_y = ( d1.m_src.m_position.y + d1.m_dst.m_position.y) / 2.0;
+
+  double d2_x = ( d2.m_src.m_position.x + d2.m_dst.m_position.x) / 2.0;
+  double d2_y = ( d2.m_src.m_position.y + d2.m_dst.m_position.y) / 2.0;
+
+  double distance = sqrt( pow(d1_x - d2_x, 2) + pow(d1_y - d2_y, 2) );
+
 
   if(distance - m_cschedCellConfig.m_interDistance > 1e-2)
     return true;
@@ -411,7 +458,28 @@ D2dCircleFfMacScheduler::FreeInterference(const d2dlink& d1, const d2dlink& d2)
     return false;
 }
 
+bool
+D2dCircleFfMacScheduler::CanUseSameRes(const d2dlink_state& d1, const d2dlink_state& d2)
+{
+	/* can d1 reuse d2's resource ? */
 
+	if (m_resConflictMap[std::pair<uint16_t, uint16_t>(d1.m_linkId, d2.m_linkId)])
+	{
+		return false;
+	}
+
+	uint8_t rbStart = m_dciAllocMap[d2.m_linkId];
+
+	for( uint16_t i = 0; i < m_resAllocMap[rbStart].size(); ++i)
+	{
+		if(m_resConflictMap[std::pair<uint16_t, uint16_t>(m_resAllocMap[rbStart][i], d1.m_linkId)])
+			return false;
+
+	}
+
+	return true;
+
+}
 
 
 

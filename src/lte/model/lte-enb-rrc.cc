@@ -1489,14 +1489,14 @@ LteEnbRrc::GetTypeId (void)
                    MakeDoubleChecker<double> (0.0, 1.0))
     .AddAttribute ("UprCellThreshold",
                    "user per rb in cell subsystem",
-                   DoubleValue (4.0),
+                   DoubleValue (8.0),
                    MakeDoubleAccessor (&LteEnbRrc::m_uprCellThreshold),
-                   MakeDoubleChecker<double> (0.0, 1.0))
+                   MakeDoubleChecker<double> ())
     .AddAttribute ("UprD2dThreshold",
                    "user per rb in d2d subsystem",
-                   DoubleValue (0.8),
+                   DoubleValue (8.0),
                    MakeDoubleAccessor (&LteEnbRrc::m_uprD2dThreshold),
-                   MakeDoubleChecker<double> (0.0, 1.0))
+                   MakeDoubleChecker<double> ())
     .AddAttribute ("D2dDetectPeriodicity",
                    "every D2dDetectPeriodicity ms, enb send d2d detect signal",
                    UintegerValue (100),
@@ -1831,8 +1831,8 @@ LteEnbRrc::ConfigureCell (uint8_t ulBandwidth, uint8_t dlBandwidth,
   if (m_innerCom.empty())
   {
     /* 仿真开始10ms之后，开始进行D2D决策 */
-    std::cout<<"schedule DetectInnerCommunication"<<std::endl;
-    Simulator::Schedule (MilliSeconds(300), &LteEnbRrc::DetectInnerCommunication, this);
+    // std::cout<<"schedule DetectInnerCommunication"<<std::endl;
+    Simulator::Schedule (MilliSeconds(400), &LteEnbRrc::DetectInnerCommunication, this);
   }
 
   m_configured = true;
@@ -2562,7 +2562,7 @@ LteEnbRrc::SendSystemInformation ()
   m_rrcSapUser->SendSystemInformation (si);
   Simulator::Schedule (m_systemInformationPeriodicity, &LteEnbRrc::SendSystemInformation, this);
 
-  std::cout<<"SendSystemInformation"<<std::endl;
+  // std::cout<<"SendSystemInformation"<<std::endl;
 
 
 }
@@ -2589,6 +2589,9 @@ LteEnbRrc::DetectInnerCommunication()
     cf.m_d2dSrsOffset = -1;
 
     std::pair<uint16_t, uint16_t> key(iter_bef->first, iter_next->first);
+
+    std::cout<<"inner communication from " << iter_bef->first << " to "<<iter_next->first
+            <<" " << GetPosition(iter_bef->first) <<" "<<GetPosition(iter_next->first) <<std::endl;
 
     // m_innerCom.insert(std::pair<uint16_t, uint16_t>, d2dCommunicationConfig(key, cf));
     m_innerCom[key] = cf;
@@ -2682,11 +2685,25 @@ LteEnbRrc::DoReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vect
   std::cout<<" in LteEnbRrc::DoReceiveD2dCqi function:: between "<<src_rnti <<" ---- "<<dst_rnti <<"cqi == "<<(uint32_t)cqi[0]<<std::endl;
   Vector src_pos, dst_pos;
 
-	bool result = CanUseD2dMode(src_rnti, dst_rnti, cqi, src_pos, dst_pos);
+  if( m_ueMap.find(src_rnti) == m_ueMap.end() || m_ueMap.find(dst_rnti) == m_ueMap.end() )
+  {
+    std::cout<<"LteEnbRrc::DoReceiveD2dCqi  Error ----- Node " << src_rnti << " or "<< dst_rnti << " didn't exist"<<std::endl;
+      return;
+  }
+
+  bool result = CanUseD2dMode(src_rnti, dst_rnti, cqi, src_pos, dst_pos);
+
+
+  
   std::map<std::pair<uint16_t, uint16_t>, d2dCommunicationConfig>::iterator iter = 
     m_innerCom.find(std::pair<uint16_t, uint16_t>(src_rnti, dst_rnti));
 
-    NS_ASSERT(iter != m_innerCom.end());
+    // NS_ASSERT(iter != m_innerCom.end());
+    if (iter == m_innerCom.end())
+    {
+      std::cout<<"LteEnbRrc::DoReceiveD2dCqi : Error ---- this d2d link didn't exist"<<std::endl;
+      return;
+    }
 
   if (iter->second.m_d2d == false && result == true) 
   {
@@ -2694,6 +2711,8 @@ LteEnbRrc::DoReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vect
 
     // m_d2dPair[ std::pair<uint16_t, uint16_t>(src_rnti, dst_rnti) ] = true;
     // m_cmacSapProvider->UpdateD2dInfo(src_rnti, dst_rnti, cqi, src_pos, dst_pos);
+    iter->second.m_d2d = true;
+    std::cout<<"d2d link position from "<<src_rnti << " to "<<dst_rnti<< " : position : "<<src_pos<<" " <<dst_pos<<std::endl;
     m_cmacSapProvider->EnterD2dMode(src_rnti, dst_rnti, cqi, src_pos, dst_pos);
   }
   else if (iter->second.m_d2d && !result)
@@ -2701,6 +2720,7 @@ LteEnbRrc::DoReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vect
     /* leave d2d mode */
     // m_d2dPair[ std::pair<uint16_t, uint16_t>(src_rnti, dst_rnti) ] = false;
     m_d2dSrsOffsetMap[iter->second.m_d2dSrsOffset] = false;
+    iter->second.m_d2d = false;
     m_cmacSapProvider->LeaveD2dMode(src_rnti, dst_rnti);
   }
   else if(iter->second.m_d2d && result)
@@ -2746,8 +2766,13 @@ LteEnbRrc::GetPosition(uint16_t rnti)
         }
     }
 out:
-    // NS_ASSERT(it != NodeList::End ());
-    NS_ASSERT(i != NodeList::GetNNodes ());
+
+    // NS_ASSERT(i != NodeList::GetNNodes ());
+
+    if (i == NodeList::GetNNodes () )
+    {
+      return Vector(0, 0, 0);
+    }
 
     return position;
 }
@@ -2804,8 +2829,11 @@ LteEnbRrc::CanUseD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector
     {
     		struct d2dResUseInfo_s d2dru = m_cmacSapProvider->GetD2dResUseInfo() ;
     		double d2dResUsePercent = d2dru.m_dru;
+        std::cout<<"LteEnbRrc::CanUseD2dMode  d2dResUsePercent == " << d2dResUsePercent << std::endl;
+        std::cout<<"now we are determine link" << src_rnti << " to " << dst_rnti << std::endl;
     		if (d2dResUsePercent < m_d2dResUseThreshold )
     		{
+          std::cout<<"d2d res usage is low : result is true" <<  std::endl;
     			return true;
     		}
     		else
@@ -2813,12 +2841,14 @@ LteEnbRrc::CanUseD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector
     			double upr_cell = m_ueMap.size() / m_ulBandwidth;
     			if (upr_cell > m_uprCellThreshold )
     			{
+            std::cout<<"cell upr is high : result is true" <<  std::endl;
     				return true;
     			}
     			else 
     			{
     				if (cqi < m_d2dCqiThreshold)
     				{
+              std::cout<<"d2d cqi is low : result is false" <<  std::endl;
     					return false;
     				}
     				else
@@ -2826,10 +2856,12 @@ LteEnbRrc::CanUseD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector
     					double upr_d2d = d2dru.m_upr;
     					if (upr_d2d > m_uprD2dThreshold)
     					{
+                std::cout<<"d2d upr is high : result is false" <<  std::endl;
     						return false;
     					}
     					else
     					{
+                std::cout<<"d2d upr is low : result is true" <<  std::endl;
     						return true;
     					}
     				}

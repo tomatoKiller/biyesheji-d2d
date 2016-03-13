@@ -1563,6 +1563,7 @@ RrFfMacScheduler::DoSchedUlTriggerReq (const struct FfMacSchedSapProvider::Sched
                 }
               continue; // CQI == 0 means "out of range" (see table 7.2.3-1 of 36.213)
             }
+          uldci.m_cqi = cqi;
           uldci.m_mcs = m_amc->GetMcsFromCqi (cqi);
         }
       uldci.m_tbSize = (m_amc->GetTbSizeFromMcs (uldci.m_mcs, rbPerFlow) / 8); // MCS 0 -> UL-AMC TBD

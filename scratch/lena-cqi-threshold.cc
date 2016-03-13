@@ -26,18 +26,22 @@
 #include "ns3/config-store.h"
 #include <ns3/buildings-helper.h>
 #include <sstream>
+ #include <fstream>
 //#include "ns3/gtk-config-store.h"
 
 using namespace ns3;
 
+std::ofstream positionFile("UePosition");
+
+
 static void 
 CourseChange (std::string foo, Ptr<const MobilityModel> mobility)
 {
-  // Vector pos = mobility->GetPosition ();
-  // Vector vel = mobility->GetVelocity ();
-  // std::cout << Simulator::Now () <<" " <<foo<< ", model=" << mobility << ", POS: x=" << pos.x << ", y=" << pos.y
-  //           << ", z=" << pos.z << "; VEL:" << vel.x << ", y=" << vel.y
-  //           << ", z=" << vel.z << std::endl;
+  Vector pos = mobility->GetPosition ();
+  Vector vel = mobility->GetVelocity ();
+  positionFile << Simulator::Now () <<" " <<foo<< ", model=" << mobility << ", POS: x=" << pos.x << ", y=" << pos.y
+            << ", z=" << pos.z << "; VEL:" << vel.x << ", y=" << vel.y
+            << ", z=" << vel.z << std::endl;
 }
 
 int main (int argc, char *argv[])
@@ -54,7 +58,7 @@ int main (int argc, char *argv[])
     // LogComponentEnable("LteEnbPhy",LOG_LEVEL_ALL);
     // LogComponentEnable("LteUePhy",LOG_LEVEL_DEBUG);
     // LogComponentEnable("LteUeMac",LOG_LEVEL_DEBUG);
-    // LogComponentEnable("D2dCircleFfMacScheduler",LOG_LEVEL_ALL);
+    LogComponentEnable("D2dCircleFfMacScheduler",LOG_LEVEL_DEBUG);
     // LogComponentEnable("LteSpectrumPhy",LOG_LEVEL_FUNCTION);
     // LogComponentEnable("MultiModelSpectrumChannel",LOG_LEVEL_DEBUG);
     // LogComponentEnable("MultiModelSpectrumChannel",LOG_LEVEL_LOGIC);
@@ -68,10 +72,10 @@ int main (int argc, char *argv[])
   // to load a previously created default attribute file
   // ./waf --command-template="%s --ns3::ConfigStore::Filename=input-defaults.txt --ns3::ConfigStore::Mode=Load --ns3::ConfigStore::FileFormat=RawText" --run src/lte/examples/lena-first-sim
 
-    // runnum = 8;
+    runnum = 2;
     while(runnum++ < 10)
   {
-    if (runnum == 2)
+    if (runnum == 4)
     {
       break;
     }
@@ -128,14 +132,14 @@ int main (int argc, char *argv[])
                                  "X", StringValue ("0.0"),
                                  "Y", StringValue ("0.0"),
                                  "Theta", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=6.2830]"),
-                                 "Rho", StringValue ("ns3::UniformRandomVariable[Min=100|Max=1000]"));
+                                 "Rho", StringValue ("ns3::UniformRandomVariable[Min=50|Max=500]"));
 
       
   mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
                              "Mode", StringValue ("Time"),
                              "Time", StringValue ("0.5"),
                              "Speed", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"),
-                             "Bounds", StringValue ("-1000|1000|-1000|1000"));
+                             "Bounds", StringValue ("-500|500|-500|500"));
   mobility.Install (ueNodes);
 
   Config::Connect ("/NodeList/*/$ns3::MobilityModel/CourseChange",
@@ -168,7 +172,7 @@ int main (int argc, char *argv[])
     EpsBearer bearer (q);
     lteHelper->ActivateDataRadioBearer (ueDevs, bearer);
 
-    Simulator::Stop (Seconds (2));
+    Simulator::Stop (Seconds (1.7));
 
     Simulator::Run ();
 
@@ -176,5 +180,7 @@ int main (int argc, char *argv[])
 
 
   }
+
+  positionFile.close();
     return 0;
 }

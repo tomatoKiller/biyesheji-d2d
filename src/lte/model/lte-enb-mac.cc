@@ -1267,7 +1267,7 @@ LteEnbMac::DoSchedUlConfigInd (FfMacSchedSapUser::SchedUlConfigIndParameters ind
   for (  uint32_t i  = 0; i < ind.m_dciList.size (); i++ )
     {
       m_ulScheduling (m_frameNo, m_subframeNo, ind.m_dciList.at (i).m_rnti,
-                      ind.m_dciList.at (i).m_mcs, ind.m_dciList.at (i).m_tbSize);
+                      ind.m_dciList.at (i).m_cqi, ind.m_dciList.at (i).m_rbLen);
     }
 
 
@@ -1399,7 +1399,7 @@ LteEnbMac::DoD2dSchedConfigInd(D2dFfMacSchedSapUser::SchedConfigIndParameters in
   for (unsigned int i = 0; i < ind.m_dciList.size (); i++)
   {
     // send the correspondent ul dci
-    std::cout<<"here a a  a a a"<<std::endl;
+    // std::cout<<"LteEnbMac::DoD2dSchedConfigInd alloc send d2d dci"<<std::endl;
     Ptr<D2dDciLteControlMessage> msg = Create<D2dDciLteControlMessage> ();
     msg->SetDci (ind.m_dciList.at (i));
     m_enbPhySapProvider->SendLteControlMessage (msg);
@@ -1449,7 +1449,7 @@ LteEnbMac::DoSendD2dCqiDetectReq (const std::vector<d2dLinkSrsConfig>& linkList)
     Ptr<D2dCqiDetectLteControlMessage> msg = Create<D2dCqiDetectLteControlMessage> ();
     msg->SetSrcDst (linkList[i].m_srcRnti, linkList[i].m_dstRnti);
     msg->SetSrsConfig (linkList[i].m_srsConfig);
-    std::cout<<"send d2d cqi detect between "<<linkList[i].m_srcRnti <<" --- "<<linkList[i].m_dstRnti<<std::endl;
+    // std::cout<<"send d2d cqi detect between "<<linkList[i].m_srcRnti <<" --- "<<linkList[i].m_dstRnti<<std::endl;
     m_enbPhySapProvider->SendLteControlMessage (msg);
   }
 }

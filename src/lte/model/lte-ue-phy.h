@@ -228,6 +228,10 @@ public:
 
   ObjectFactory m_d2dAntennaModelFactory;
 
+  Ptr<SpectrumValue> m_d2dNoisePsd;
+
+  uint8_t m_d2dRandomCqi;
+
 //-------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------
 
 

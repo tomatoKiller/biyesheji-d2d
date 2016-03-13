@@ -98,6 +98,9 @@ private:
 
   void DoSchedReq(const struct D2dFfMacSchedSapProvider::SchedReqParameters& params);
 
+  void UpdateResConflictMap(const d2dlink &link, const d2dlink_state& sta);
+
+  bool CanUseSameRes(const d2dlink_state& d1, const d2dlink_state& d2);
 
   uint32_t m_cqiTimersThreshold; // # of TTIs for which a CQI canbe considered valid
 
@@ -120,6 +123,11 @@ private:
   uint8_t m_ulGrantMcs; // MCS for UL grant (default 0)
 
   double m_resUsePercent;
+
+  std::map< std::pair<uint16_t, uint16_t>, bool> m_resConflictMap; 
+  std::map<uint8_t, std::vector<uint16_t> > m_resAllocMap;  /* rb to linkid */
+  std::map<uint16_t, uint8_t> m_dciAllocMap;  /* linkid to rb */
+
 
   D2dFfMacCschedSapUser *m_cschedSapUser;
   D2dFfMacSchedSapUser *m_schedSapUser;

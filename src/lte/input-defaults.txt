@@ -1,8 +1,0 @@
-ns3::LteEnbRrc::D2dDistanceThreshold=30.0
-ns3::LteEnbRrc::D2dCqiThreshold=5
-ns3::LteEnbRrc::D2dResUseThreshold=0.8
-ns3::LteEnbRrc::UprCellThreshold=4.0
-ns3::LteEnbRrc::UprD2dThreshold=0.8
-ns3::LteEnbRrc::D2dDetectPeriodicity=100
-
-ns3::LteUePhy::D2dTxPower=10.0

@@ -97,11 +97,11 @@ LteHelper::DoInitialize (void)
   if (d2dSplm != 0)
     {
       NS_LOG_LOGIC (this << " using a SpectrumPropagationLossModel in D2D");
-      m_downlinkChannel->AddSpectrumPropagationLossModel (d2dSplm);
+      m_d2dChannel->AddSpectrumPropagationLossModel (d2dSplm);
     }
   else
     {
-      NS_LOG_LOGIC (this << " using a PropagationLossModel in DL");
+      NS_LOG_LOGIC (this << " using a PropagationLossModel in D2D");
       Ptr<PropagationLossModel> d2dPlm = m_d2dlinkPathlossModel->GetObject<PropagationLossModel> ();
       NS_ASSERT_MSG (d2dPlm != 0, " " << m_d2dlinkPathlossModel << " is neither PropagationLossModel nor SpectrumPropagationLossModel");
       m_d2dChannel->AddPropagationLossModel (d2dPlm);
