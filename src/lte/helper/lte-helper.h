@@ -655,6 +655,8 @@ private:
   std::string GetD2dSchedulerType () const;
   void SetD2dSchedulerAttribute (std::string n, const AttributeValue &v);
   ObjectFactory m_d2dSchedulerFactory;
+  void SetD2dPathlossModelType(std::string type);
+  void SetD2dPathlossModelAttribute (std::string n, const AttributeValue &v);
 //-------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------
 
 

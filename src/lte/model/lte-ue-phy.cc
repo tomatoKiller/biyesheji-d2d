@@ -1683,6 +1683,9 @@ LteUePhy::DoSetD2dSrsConfigForTx(uint16_t dst_rnti, uint16_t d2dSrsConfig)
   m_d2dSrsPeriodity = GetSrsPeriodicity(d2dSrsConfig);
 
   Ptr<LteSpectrumPhy> D2dTxPhy = CreateObject<LteSpectrumPhy> ();
+
+  D2dTxPhy->SetRnti(m_rnti);
+  D2dTxPhy->SetDstRnti(dst_rnti);
   
   D2dTxPhy->SetChannel(m_d2dChannel);
   
@@ -1825,7 +1828,7 @@ LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
           cqiSum += cqi.at (i);
           activeSubChannels++;
         }
-      // NS_LOG_DEBUG (this << " d2d subch " << i << " cqi " <<  cqi.at (i));
+      std::cout << " d2d subch " << i << " cqi " <<  cqi.at (i) << std::endl;
     }
 
   Ptr<D2dCqiLteControlMessage> msg = Create<D2dCqiLteControlMessage> ();

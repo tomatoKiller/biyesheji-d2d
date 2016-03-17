@@ -570,6 +570,8 @@ LteSpectrumPhy::StartTxUlSrsFrame ()
       */
       NS_ASSERT (m_txPsd);
       NS_LOG_LOGIC (this << " m_txPsd: " << *m_txPsd);
+
+      std::cout<<"UL SRS " << " m_txPsd: " << *m_txPsd <<std::endl;
       
       // we need to convey some PHY meta information to the receiver
       // to be used for simulation purposes (e.g., the CellId). This
@@ -583,6 +585,7 @@ LteSpectrumPhy::StartTxUlSrsFrame ()
       txParams->txAntenna = m_antenna;
       txParams->psd = m_txPsd;
       txParams->cellId = m_cellId;
+
       m_channel->StartTx (txParams);
       m_endTxEvent = Simulator::Schedule (UL_SRS_DURATION, &LteSpectrumPhy::EndTxUlSrs, this);
     }
@@ -922,6 +925,7 @@ LteSpectrumPhy::StartRxUlSrs (Ptr<LteSpectrumSignalParametersUlSrsFrame> lteUlSr
                            && (m_firstRxDuration == lteUlSrsRxParams->duration));
               }            
             ChangeState (RX_UL_SRS);
+            std::cout<<"UL SRS " << " m_rxPsd: " << *(lteUlSrsRxParams->psd) <<std::endl;
             m_interferenceCtrl->StartRx (lteUlSrsRxParams->psd);          
           }
         else
@@ -1348,6 +1352,7 @@ LteSpectrumPhy::StartTxD2dSrsFrame (uint16_t src_rnti, uint16_t dst_rnti)
       */
       NS_ASSERT (m_txPsd);
       NS_LOG_LOGIC (this << " m_txPsd: " << *m_txPsd);
+      std::cout<<"D2D SRS from "<<m_rnti << " to " << m_dst_rnti<< " m_txPsd: " << *m_txPsd<<std::endl;
       
       // we need to convey some PHY meta information to the receiver
       // to be used for simulation purposes (e.g., the CellId). This
@@ -1425,6 +1430,8 @@ LteSpectrumPhy::StartRxD2dSrs (Ptr<LteSpectrumSignalParametersD2dSrsFrame> lteD2
 
            
             ChangeState (RX_D2D_SRS);
+            std::cout<<"D2D SRS from "<<m_dst_rnti << " to " <<m_rnti << " m_rxPsd: " << *(lteD2dSrsRxParams->psd) <<std::endl;
+            
             m_interferenceCtrl->StartRx (lteD2dSrsRxParams->psd);          
           // }
         // else

@@ -195,6 +195,13 @@ TypeId LteHelper::GetTypeId (void)
                    StringValue ("ns3::FriisPropagationLossModel"),
                    MakeStringAccessor (&LteHelper::SetPathlossModelType),
                    MakeStringChecker ())
+    .AddAttribute ("D2DPathlossModel",
+                   "The type of pathloss model to be used. "
+                   "The allowed values for this attributes are the type names "
+                   "of any class inheriting from ns3::PropagationLossModel.",
+                   StringValue ("ns3::Cost231PropagationLossModel"),
+                   MakeStringAccessor (&LteHelper::SetD2dPathlossModelType),
+                   MakeStringChecker ())
     .AddAttribute ("FadingModel",
                    "The type of fading model to be used."
                    "The allowed values for this attributes are the type names "
@@ -296,6 +303,21 @@ LteHelper::SetD2dSchedulerAttribute (std::string n, const AttributeValue &v)
   NS_LOG_FUNCTION (this << n);
   m_d2dSchedulerFactory.Set (n, v);
 }
+
+void 
+LteHelper::SetD2dPathlossModelType(std::string type)
+{
+  NS_LOG_FUNCTION (this << type);
+  m_d2dPathlossModelFactory = ObjectFactory ();
+  m_d2dPathlossModelFactory.SetTypeId (type);
+}
+
+void 
+LteHelper::SetD2dPathlossModelAttribute (std::string n, const AttributeValue &v)
+{
+  NS_LOG_FUNCTION (this << n);
+  m_d2dPathlossModelFactory.Set (n, v);
+}
 //------------------------------------------------D 2 D O V E R------------------------------------------
 
 
@@ -351,8 +373,6 @@ LteHelper::SetPathlossModelType (std::string type)
   m_dlPathlossModelFactory.SetTypeId (type);
   m_ulPathlossModelFactory = ObjectFactory ();
   m_ulPathlossModelFactory.SetTypeId (type);
-  m_d2dPathlossModelFactory = ObjectFactory ();
-  m_d2dPathlossModelFactory.SetTypeId (type);
 }
 
 void 
