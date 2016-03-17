@@ -513,7 +513,7 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
   
 	std::vector <bool> rbMap;
 	rbMap.resize(m_cschedCellConfig.m_rbs, false);
-	size_t  rbAllocIndex = 0;
+	int  rbAllocIndex = 0;
 	
 
 	m_resAllocMap.clear();
@@ -538,34 +538,31 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 		  {
 		    rbMap[i] = true;
 		  }
-		  // NS_LOG_DEBUG("alloc new RB "<<0<< " and " << 1);
-		  NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<<" alloc new RB "<<0<< " and " << 1);
-
-		  // rbAllocIndex++;
-                
+		  // NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<<" alloc new RB "<<0<< " and " << 1);          
 		}
 		else 
 		{
-			std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter_bef = iter - 1;
 			int index_bef = rbAllocIndex - 1;
+			std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter_bef = iter - 1;
 
-			while(1) 
+			while( index_bef > -1)
 			{
-        
-				if (iter_bef == m_d2dlinks.begin())
-				{
-					//
 					if (iter_bef->first.m_src == iter->first.m_src || CanUseSameRes(iter->second, iter_bef->second) )
 					{
 						/* 可以使用相同的资源 */
-						NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<< " reuse "
-							"link " << iter_bef->first.m_src.m_rnti << " to "<< iter_bef->first.m_dst.m_rnti);
+						// NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<< " reuse "
+						// 	"link " << iter_bef->first.m_src.m_rnti << " to "<< iter_bef->first.m_dst.m_rnti);
 						d2ddci.m_rbStart = ret.m_dciList[index_bef].m_rbStart;
 						d2ddci.m_rbLen = ret.m_dciList[index_bef].m_rbLen;
 						break;
 					}
+					--index_bef;
+					--iter_bef;
+			}
 
-
+			if (index_bef == -1)
+			{
+				/* alloc new resource */
 					/* 无法复用现有资源，分配新资源 */
 					d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
 					d2ddci.m_rbStart = 0;
@@ -578,11 +575,10 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 
 					if(i + m_cschedCellConfig.m_rbsperuser > m_cschedCellConfig.m_rbs )
 					{
-						/* 资源不足，无法继续分配 */
 						m_resRunOut = true;
 						NS_LOG_DEBUG("d2d resource out of use");
 
-						break;
+						continue;
 					}
 					else
 					{
@@ -592,36 +588,85 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 						{
 							rbMap[i++] = true;
 						}
-						NS_LOG_DEBUG("alloc new RB "<<(uint32_t)d2ddci.m_rbStart << " and " << (uint32_t)d2ddci.m_rbStart+1);
-						break;
 					}
-    		
-				}
-				else
-				{
-					/* 寻找可复用的现有资源 */
-					if ( iter_bef->first.m_src == iter->first.m_src || CanUseSameRes(iter->second, iter_bef->second) )
-					{
-						/* 可以使用相同的资源 */
-						NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<< " reuse "
-							"link " << iter_bef->first.m_src.m_rnti << " to "<< iter_bef->first.m_dst.m_rnti);
-						d2ddci.m_rbStart = ret.m_dciList[index_bef].m_rbStart;
-						d2ddci.m_rbLen = ret.m_dciList[index_bef].m_rbLen;
-						break;
-					}
-
-					--iter_bef;
-					--index_bef;
-				}
 
 			}
+			// std::vector<std::pair<d2dlink, d2dlink_state> >::iterator iter_bef = iter - 1;
+			// uint8_t index_bef = rbAllocIndex - 1;
+
+			// while(1) 
+			// {
+        
+			// 	if (iter_bef == m_d2dlinks.begin())
+			// 	{
+			// 		//
+			// 		if (iter_bef->first.m_src == iter->first.m_src || CanUseSameRes(iter->second, iter_bef->second) )
+			// 		{
+			// 			/* 可以使用相同的资源 */
+			// 			// NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<< " reuse "
+			// 			// 	"link " << iter_bef->first.m_src.m_rnti << " to "<< iter_bef->first.m_dst.m_rnti);
+			// 			d2ddci.m_rbStart = ret.m_dciList[index_bef].m_rbStart;
+			// 			d2ddci.m_rbLen = ret.m_dciList[index_bef].m_rbLen;
+			// 			break;
+			// 		}
+
+
+			// 		/* 无法复用现有资源，分配新资源 */
+			// 		d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
+			// 		d2ddci.m_rbStart = 0;
+			// 		int i = 0;
+			// 		for(; i < m_cschedCellConfig.m_rbs; ++i)
+			// 		{
+			// 			if( rbMap[i] == false )
+			// 				break;
+			// 		}
+
+			// 		if(i + m_cschedCellConfig.m_rbsperuser > m_cschedCellConfig.m_rbs )
+			// 		{
+			// 			 资源不足，无法继续分配 
+			// 			m_resRunOut = true;
+			// 			NS_LOG_DEBUG("d2d resource out of use");
+
+			// 			break;
+			// 		}
+			// 		else
+			// 		{
+			// 			d2ddci.m_rbLen = m_cschedCellConfig.m_rbsperuser;
+			// 			d2ddci.m_rbStart = i;
+			// 			for(int j = 0; j < m_cschedCellConfig.m_rbsperuser; ++j)
+			// 			{
+			// 				rbMap[i++] = true;
+			// 			}
+			// 			// NS_LOG_DEBUG("alloc new RB "<<(uint32_t)d2ddci.m_rbStart << " and " << (uint32_t)d2ddci.m_rbStart+1);
+			// 			break;
+			// 		}
+    		
+			// 	}
+			// 	else
+			// 	{
+			// 		/* 寻找可复用的现有资源 */
+			// 		if ( iter_bef->first.m_src == iter->first.m_src || CanUseSameRes(iter->second, iter_bef->second) )
+			// 		{
+			// 			/* 可以使用相同的资源 */
+			// 			// NS_LOG_DEBUG("link " << iter->first.m_src.m_rnti << " to "<< iter->first.m_dst.m_rnti<< " reuse "
+			// 			// 	"link " << iter_bef->first.m_src.m_rnti << " to "<< iter_bef->first.m_dst.m_rnti);
+			// 			d2ddci.m_rbStart = ret.m_dciList[index_bef].m_rbStart;
+			// 			d2ddci.m_rbLen = ret.m_dciList[index_bef].m_rbLen;
+			// 			break;
+			// 		}
+
+			// 		--iter_bef;
+			// 		--index_bef;
+			// 	}
+
+			// }
 	      
 		}
 
-		if (m_resRunOut)
-		{
-			continue;
-		}
+		// if (m_resRunOut)
+		// {
+		// 	continue;
+		// }
 
 		rbAllocIndex++;
 
@@ -640,8 +685,8 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 
 		ret.m_dciList.push_back(d2ddci);
 
-		// NS_LOG_DEBUG("alloc link " << d2ddci.m_tx << " to " << d2ddci.m_rx << " rbStart = " << (uint32_t)d2ddci.m_rbStart << " rbLen = "
-		// 	<< (uint32_t)d2ddci.m_rbLen);
+		NS_LOG_DEBUG("alloc link " << d2ddci.m_tx << " to " << d2ddci.m_rx << " rbStart = " << (uint32_t)d2ddci.m_rbStart << " rbLen = "
+			<< (uint32_t)d2ddci.m_rbLen);
     
 	}
 

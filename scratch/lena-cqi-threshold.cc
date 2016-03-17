@@ -73,10 +73,10 @@ int main (int argc, char *argv[])
   // to load a previously created default attribute file
   // ./waf --command-template="%s --ns3::ConfigStore::Filename=input-defaults.txt --ns3::ConfigStore::Mode=Load --ns3::ConfigStore::FileFormat=RawText" --run src/lte/examples/lena-first-sim
 
-    runnum = 0;
+    runnum = 9;
     while(runnum++ < 10)
   {
-    if (runnum == 2)
+    if (runnum == 11)
     {
       break;
     }
