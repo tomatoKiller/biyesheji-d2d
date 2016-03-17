@@ -733,9 +733,9 @@ LteEnbMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 //----------------------------------------------------------D 2 D------------------------------------------
   D2dFfMacSchedSapProvider::SchedReqParameters d2dparams;
   NS_ASSERT(m_d2dschedSapProvider != 0);
-  NS_LOG_DEBUG("LteEnbMac d2d point");
+
   m_d2dschedSapProvider->SchedReq(d2dparams);
-  NS_LOG_DEBUG("LteEnbMac d2d point .. 2");
+
 //------------------------------------------------D 2 D O V E R------------------------------------------
 
 }
@@ -1261,6 +1261,7 @@ LteEnbMac::DoSchedUlConfigInd (FfMacSchedSapUser::SchedUlConfigIndParameters ind
       Ptr<UlDciLteControlMessage> msg = Create<UlDciLteControlMessage> ();
       msg->SetDci (ind.m_dciList.at (i));
       m_enbPhySapProvider->SendLteControlMessage (msg);
+      m_cmacSapUser->UeUlCqiInd(ind.m_dciList.at (i).m_rnti, ind.m_dciList.at (i).m_cqi);
     }
 
   // Fire the trace with the UL information

@@ -1262,6 +1262,7 @@ private:
   void D2dCommunicationDetect();
   void DetectInnerCommunication();
   uint16_t GetD2dSrsConfig(uint8_t &offset);
+  void DoUeUlCqiInd(uint16_t rnti, uint8_t cqi);
   Vector GetPosition(uint16_t rnti);
   uint8_t m_d2dCqiThreshold;
   double m_d2dResUseThreshold;
@@ -1282,6 +1283,7 @@ private:
 
   std::map<std::pair<uint16_t, uint16_t>, d2dCommunicationConfig> m_innerCom;
   std::vector<bool> m_d2dSrsOffsetMap;
+  std::map<uint16_t, uint8_t> m_ueCqi;
   // std::map<std::pair<uint16_t, uint16_t> > m_innerCom;
 //-----------------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------
 

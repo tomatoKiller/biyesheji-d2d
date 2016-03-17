@@ -228,6 +228,8 @@ public:
   virtual void RrcConfigurationUpdateInd (UeConfig params) = 0;
 
   virtual void ReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  sinr) = 0;
+
+  virtual void UeUlCqiInd(uint16_t rnti, uint8_t cqi) = 0;
 };
 
 

@@ -1274,7 +1274,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
               pbD2d->AddPacket(packet_new);
             }
 
-            std::cout<<" SetD2dSubChannelsForTransmission from"<<m_rnti << " to " << itDci->first << std::endl;
+            // std::cout<<" SetD2dSubChannelsForTransmission from"<<m_rnti << " to " << itDci->first << std::endl;
 
             SetD2dSubChannelsForTransmission(itDci->first, itDci->second);
           }
@@ -1748,7 +1748,7 @@ void
 LteUePhy::SendD2dSrs(uint16_t dst_rnti)
 {
   NS_LOG_DEBUG(this << " in LteUePhy::SendD2dSrs function");
-  std::cout<<"LteUePhy::SendD2dSrs from " << m_rnti <<" to " << dst_rnti <<std::endl;
+  // std::cout<<"LteUePhy::SendD2dSrs from " << m_rnti <<" to " << dst_rnti <<std::endl;
   std::vector <int> d2dRb;
   for (uint8_t i = 0; i < m_d2dBandwidth; i++)
     {
@@ -1811,7 +1811,7 @@ LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
 
    Values::const_iterator it= sinr.ConstValuesBegin (); 
 
-  std::cout<<"GenerateD2dCqiReport from " << dst_rnti <<" to " << m_rnti <<" sinr == " << *it <<std::endl;
+  // std::cout<<"GenerateD2dCqiReport from " << dst_rnti <<" to " << m_rnti <<" sinr == " << *it <<std::endl;
 
 
   

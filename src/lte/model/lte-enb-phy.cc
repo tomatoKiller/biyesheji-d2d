@@ -836,7 +836,7 @@ void
 LteEnbPhy::GenerateCtrlCqiReport (const SpectrumValue& sinr)
 {
   NS_LOG_FUNCTION (this << sinr << Simulator::Now () << m_srsStartTime);
-  std::cout<<"LteEnbPhy: receive UL SRS "<< sinr<<std::endl;
+  // std::cout<<"LteEnbPhy: receive UL SRS "<< sinr<<std::endl;
   // avoid processing SRSs sent with an old SRS configuration index
   if (Simulator::Now () > m_srsStartTime)
     {

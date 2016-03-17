@@ -67,6 +67,7 @@ public:
 
 //-----------------------------------------------------------------------D 2 D------------------------------
   virtual void ReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  cqi);
+  virtual void UeUlCqiInd(uint16_t rnti, uint8_t cqi);
 //-----------------------------------------------------------------------D 2 D  O V E R---------------------
 
 private:
@@ -101,6 +102,12 @@ void
 EnbRrcMemberLteEnbCmacSapUser::ReceiveD2dCqi(uint16_t src_rnti, uint16_t dst_rnti, const std::vector<uint8_t>&  cqi)
 {
   m_rrc->DoReceiveD2dCqi(src_rnti, dst_rnti, cqi);
+}
+
+void 
+EnbRrcMemberLteEnbCmacSapUser::UeUlCqiInd(uint16_t rnti, uint8_t cqi)
+{
+  m_rrc->DoUeUlCqiInd(rnti, cqi);
 }
 //-----------------------------------------------------------------------D 2 D  O V E R---------------------
 
@@ -2800,6 +2807,23 @@ LteEnbRrc::CanUseD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector
       // std::cout<<"no mode selection : "<< src_rnti <<" and " <<dst_rnti<<" can use d2d mode"<<std::endl;
       // return true;
 
+      /* simple mode selection start */
+      std::map<uint16_t, uint8_t>::iterator itCqi = m_ueCqi.find(src_rnti);
+      NS_ASSERT(itCqi != m_ueCqi.end());
+      std::cout<< "link from " << src_rnti << " to "<<dst_rnti << "d2d cqi="<< (uint32_t)cqi
+                <<" UL cqi=" << (uint32_t)itCqi->second << std::endl;
+      if (cqi >= itCqi->second)
+      {
+        return true;
+      }
+      else 
+      {
+        return false;
+      }
+
+      /* simple mode selection end */
+
+
     		struct d2dResUseInfo_s d2dru = m_cmacSapProvider->GetD2dResUseInfo() ;
     		double d2dResUsePercent = d2dru.m_dru;
         std::cout<<"LteEnbRrc::CanUseD2dMode  d2dResUsePercent == " << d2dResUsePercent << std::endl;
@@ -2844,6 +2868,12 @@ LteEnbRrc::CanUseD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector
     }
 
 
+}
+
+void
+LteEnbRrc::DoUeUlCqiInd(uint16_t rnti, uint8_t cqi)
+{
+  m_ueCqi[rnti] = cqi;
 }
 
 //-----------------------------------------------------------------------D 2 D  O V E R-------------------------------------------------------------

@@ -524,7 +524,7 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 		D2dDciListElement_s d2ddci;
 
 		std::cout << "link "<< iter->first.m_src.m_rnti << " to " 
-							<< iter->first.m_dst.m_rnti << "cqi = " << iter->second.m_cqiList[0] << std::endl;
+							<< iter->first.m_dst.m_rnti << "cqi = " << (uint32_t)iter->second.m_cqiList[0] << std::endl;
 
 		d2ddci.m_linkId = iter->second.m_linkId;
 		d2ddci.m_tx = iter->first.m_src.m_rnti;
@@ -636,7 +636,7 @@ D2dCircleFfMacScheduler::DoSchedReq(const struct D2dFfMacSchedSapProvider::Sched
 
 	NS_ASSERT(m_schedSapUser != 0);
 
-	NS_LOG_DEBUG("D2dCircleFfMacScheduler::DoSchedReq :: " << m_d2dlinks.size() << " d2dlinks ");
+	std::cout << "D2dCircleFfMacScheduler::DoSchedReq :: " << m_d2dlinks.size() << " d2dlinks " << std::endl;
 	NS_LOG_DEBUG("d2d resource usage == " << m_resUsePercent);
 	m_schedSapUser->SchedConfigInd (ret);
 
