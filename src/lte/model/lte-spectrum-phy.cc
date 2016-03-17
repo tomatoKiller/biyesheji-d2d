@@ -1430,7 +1430,7 @@ LteSpectrumPhy::StartRxD2dSrs (Ptr<LteSpectrumSignalParametersD2dSrsFrame> lteD2
 
            
             ChangeState (RX_D2D_SRS);
-            std::cout<<"D2D SRS from "<<m_dst_rnti << " to " <<m_rnti << " m_rxPsd: " << *(lteD2dSrsRxParams->psd) <<std::endl;
+            // std::cout<<"D2D SRS from "<<m_dst_rnti << " to " <<m_rnti << " m_rxPsd: " << *(lteD2dSrsRxParams->psd) <<std::endl;
             
             m_interferenceCtrl->StartRx (lteD2dSrsRxParams->psd);          
           // }
@@ -1453,7 +1453,7 @@ void
 LteSpectrumPhy::EndRxD2dSrs (uint16_t d2dSrsSrc, uint16_t d2dSrsDst)
 {
   NS_ASSERT (m_state == RX_D2D_SRS);
-  std::cout<<"LteSpectrumPhy::EndRxD2dSrs  from "<< d2dSrsSrc << " to " << d2dSrsDst <<std::endl;
+  // std::cout<<"LteSpectrumPhy::EndRxD2dSrs  from "<< d2dSrsSrc << " to " << d2dSrsDst <<std::endl;
   ChangeState (IDLE);
 
   m_interferenceCtrl->EndRx ();

@@ -2784,38 +2784,7 @@ LteEnbRrc::CanUseD2dMode(uint16_t src_rnti, uint16_t dst_rnti, const std::vector
   NS_LOG_DEBUG(this << " in LteEnbRrc::CanUseD2dMode function");
   src_pos = GetPosition(src_rnti);
   dst_pos = GetPosition(dst_rnti);
-  // for (NodeList::Iterator it = NodeList::Begin (); it != NodeList::End (); ++it)
-  //   {
-  //     Ptr<Node> node = *it;
-  //     uint32_t nDevs = node->GetNDevices ();
-  //     for (uint32_t j = 0; j < nDevs; j++)
-  //       {
-  //         Ptr<LteUeNetDevice> uedev = node->GetDevice (j)->GetObject <LteUeNetDevice> ();
-  //         if (uedev)
-  //           {
-  //             if ( uedev->GetMac()->GetRnti() == src_rnti )
-  //             {
-  //               src_pos = node->GetObject<MobilityModel> ()->GetPosition ();
-  //             }
-              
-  //             if ( uedev->GetMac()->GetRnti() == dst_rnti )
-  //             {
-  //               dst_pos = node->GetObject<MobilityModel> ()->GetPosition ();
-  //             }
-
-  //           }
-  //       }
-  //   }
-
-    // //判断sinr平均值是否达到门限
-    // double avg_sinr = accumulate( sinr.begin(), sinr.end(), 0.0) / sinr.size() ;
-
-    // double s = log2 ( 1 + (
-    //                        std::pow (10, avg_sinr / 10 )  /
-    //                        ( (-std::log (5.0 * 0.00005 )) / 1.5) ));
-
-
-    // uint8_t cqi = CreateObject <LteAmc> ()->GetCqiFromSpectralEfficiency (s);
+ 
 
     /* 此处只考虑 SISO 传输方式。因此layer等于1， 即cqiList只有一项 */
     uint8_t cqi = cqiList[0];

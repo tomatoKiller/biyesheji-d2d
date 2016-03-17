@@ -1769,7 +1769,7 @@ LteUePhy::ReceiveD2dSrs(const SpectrumValue& sinr)
 {
   NS_LOG_FUNCTION (this << sinr);
   NS_LOG_DEBUG(this << " in LteUePhy::ReceiveD2dSrs function");
-  std::cout<<" in LteUePhy::ReceiveD2dSrs function UE : "<<m_rnti<< " now_srs_offset ==  "<< (uint32_t)m_currentD2dSrsOffset << std::endl;
+  // std::cout<<" in LteUePhy::ReceiveD2dSrs function UE : "<<m_rnti<< " now_srs_offset ==  "<< (uint32_t)m_currentD2dSrsOffset << std::endl;
 
   std::map< uint16_t, uint16_t>::iterator iter = m_d2dSrsOffset_rx.begin();
   for(; iter != m_d2dSrsOffset_rx.end(); ++iter)
@@ -1828,7 +1828,7 @@ LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
           cqiSum += cqi.at (i);
           activeSubChannels++;
         }
-      std::cout << " d2d subch " << i << " cqi " <<  cqi.at (i) << std::endl;
+      // std::cout << " d2d subch " << i << " cqi " <<  cqi.at (i) << std::endl;
     }
 
   Ptr<D2dCqiLteControlMessage> msg = Create<D2dCqiLteControlMessage> ();
@@ -1853,10 +1853,11 @@ LteUePhy::GenerateD2dCqiReport(const SpectrumValue& sinr, uint16_t dst_rnti)
 
     /*此处随机产生一个D2D CQI 值 */
 
-  if( m_d2dRandomCqi == 0 )
-    m_d2dRandomCqi = ( rand() % 15 ) + 1;
+  // if( m_d2dRandomCqi == 0 )
+  //   m_d2dRandomCqi = ( rand() % 15 ) + 1;
 
-  d2dcqi.m_wbCqi[0] = m_d2dRandomCqi;
+  // d2dcqi.m_wbCqi[0] = m_d2dRandomCqi;
+    
   msg->SetD2dCqi(d2dcqi);
 
   DoSendLteControlMessage(msg);
